@@ -81,33 +81,36 @@ app.post('/upload', upload.single('botZip'), (req, res) => {
         const botFolder = botTarget.cwd;
         const cleanToken = token.trim();
 
+        // Generate environment & config files automatically
         fs.writeFileSync(path.join(botFolder, '.env'), `TOKEN=${cleanToken}\nDISCORD_TOKEN=${cleanToken}\nBOT_TOKEN=${cleanToken}\nPREFIX=!`);
         
         const configData = { token: cleanToken, prefix: "!", DISCORD_TOKEN: cleanToken, BOT_TOKEN: cleanToken };
         fs.writeFileSync(path.join(botFolder, 'config.json'), JSON.stringify(configData, null, 2));
 
-        res.json({ success: true, message: `Bot '${botName}' deployment initiated!` });
+        // Immediate response back to frontend so project shows up instantly
+        res.json({ success: true, message: `Bot '${botName}' deployment initiated successfully!` });
 
+        // Background installation & process spawning
         setImmediate(() => {
             try {
                 let runner = botTarget.runner;
                 if (runner === 'python3') {
-                    console.log(`[ZYRAX] Setting up Python venv for ${botName}...`);
+                    console.log(`[ZYRAX] Setting up Python virtual environment for ${botName}...`);
                     execSync('python3 -m venv venv', { cwd: botFolder });
                     const pipPath = path.join(botFolder, 'venv', 'bin', 'pip');
                     const pythonEnvPath = path.join(botFolder, 'venv', 'bin', 'python');
 
-                    // Force install all standard music bot packages
-                    console.log(`[ZYRAX] Installing discord.py, yt-dlp & PyNaCl...`);
+                    console.log(`[ZYRAX] Installing all essential Python packages (discord.py, yt-dlp, Pillow, etc.)...`);
                     execSync(`"${pipPath}" install --upgrade pip`, { cwd: botFolder });
-                    execSync(`"${pipPath}" install discord.py yt-dlp PyNaCl requests beautifulsoup4`, { cwd: botFolder });
+                    execSync(`"${pipPath}" install discord.py yt-dlp PyNaCl Pillow requests beautifulsoup4 aiohttp`, { cwd: botFolder });
 
                     if (fs.existsSync(path.join(botFolder, 'requirements.txt'))) {
+                        console.log(`[ZYRAX] Installing extra requirements from requirements.txt...`);
                         execSync(`"${pipPath}" install -r requirements.txt`, { cwd: botFolder });
                     }
                     runner = pythonEnvPath;
                 } else {
-                    console.log(`[ZYRAX] Installing Node modules for ${botName}...`);
+                    console.log(`[ZYRAX] Installing Node.js modules for ${botName}...`);
                     if (fs.existsSync(path.join(botFolder, 'package.json'))) {
                         execSync('npm install --production', { cwd: botFolder });
                     }
