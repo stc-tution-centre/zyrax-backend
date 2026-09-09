@@ -3,241 +3,521 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ZYRAX™ | HOST SERVICE</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <title>𝐙𝐘𝐑𝐀𝐗™ | HOST SERVICE</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: Arial, sans-serif; }
+        body { background-color: #f4f5f7; color: #172b4d; min-height: 100vh; display: flex; flex-direction: column; }
+
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 30px;
+            background: #ffffff;
+            border-bottom: 1px solid #e5e7eb;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.03);
+        }
+        .brand { font-size: 18px; font-weight: bold; color: #111827; }
+        .user-info { font-size: 14px; font-weight: 600; color: #374151; cursor: pointer; }
+
+        .container {
+            flex: 1;
+            max-width: 1000px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 30px 20px;
+        }
+
+        .action-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+        }
+
+        .search-box { flex: 1; min-width: 250px; }
+        .search-box input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 14px;
+            outline: none;
+            background: #ffffff;
+        }
+        .search-box input:focus { border-color: #dc2626; }
+
+        .btn-red {
+            padding: 12px 20px;
+            background-color: #dc2626;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 14px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .btn-red:hover { background-color: #b91c1c; }
+
+        .btn-blue {
+            padding: 12px 20px;
+            background-color: #2563eb;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 14px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .btn-blue:hover { background-color: #1d4ed8; }
+
+        .btn-secondary {
+            padding: 12px 20px;
+            background-color: #e5e7eb;
+            color: #374151;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 14px;
+            cursor: pointer;
+            margin-top: 8px;
+        }
+        .btn-secondary:hover { background-color: #d1d5db; }
+
+        .projects-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+        }
+
+        .project-card {
+            background: #ffffff;
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid #e5e7eb;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .project-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .project-number {
+            background: #fee2e2;
+            color: #dc2626;
+            font-weight: bold;
+            font-size: 12px;
+            padding: 4px 8px;
+            border-radius: 6px;
+        }
+
+        .project-title { font-size: 18px; font-weight: bold; color: #111827; }
+        .project-detail { font-size: 13px; color: #6b7280; word-break: break-all; }
+
+        .status-badge {
+            display: inline-block;
+            font-size: 12px;
+            font-weight: bold;
+            color: #16a34a;
+            background: #dcfce7;
+            padding: 4px 8px;
+            border-radius: 6px;
+            width: fit-content;
+        }
+
+        .empty-state {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 50px 20px;
+            background: #ffffff;
+            border-radius: 12px;
+            border: 1px dashed #d1d5db;
+            color: #6b7280;
+        }
+
+        .overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(2px);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal-box {
+            background: #ffffff;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+            width: 90%;
+            max-width: 400px;
+            text-align: center;
+            border: 1px solid #e5e7eb;
+        }
+
+        .modal-box h3 { margin-bottom: 15px; color: #111827; }
+        .modal-box input {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 14px;
+            outline: none;
+        }
+
+        .file-input-wrapper {
+            text-align: left;
+            margin-bottom: 15px;
+        }
+
+        .file-input-wrapper label {
+            display: block;
+            font-size: 12px;
+            font-weight: bold;
+            color: #374151;
+            margin-bottom: 5px;
+        }
+
+        .spinner {
+            width: 50px; 
+            height: 50px;
+            border: 5px solid #e5e7eb;
+            border-top: 5px solid #dc2626;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 15px;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
 </head>
-<body class="bg-[#0f1117] text-gray-100 min-h-screen font-sans">
+<body>
 
-    <!-- Top Navbar -->
-    <header class="border-b border-gray-800 bg-[#161922] px-6 py-4 flex items-center justify-between">
-        <div class="flex items-center space-x-2">
-            <span class="text-xl font-black tracking-wider text-white">ZYRAX™</span>
-            <span class="text-xs px-2 py-0.5 rounded bg-gray-800 text-gray-400 font-mono">HOST SERVICE</span>
-        </div>
-        <div class="flex items-center space-x-3 bg-gray-800 px-3 py-1.5 rounded-full border border-gray-700">
-            <div class="w-7 h-7 rounded-full bg-blue-600 flex items-center justify-center font-bold text-sm" id="userAvatar">U</div>
-            <span class="text-sm font-medium" id="usernameDisplay">User</span>
-        </div>
-    </header>
+    <div class="navbar">
+        <div class="brand">𝐙𝐘𝐑𝐀𝐗™ | HOST SERVICE</div>
+        <div class="user-info" id="user-display" onclick="switchUser()">👤 Guest</div>
+    </div>
 
-    <main class="max-w-5xl mx-auto p-6">
-        <!-- Controls Bar -->
-        <div class="flex flex-col md:flex-row justify-between items-center gap-4 mb-8">
-            <div class="relative w-full md:w-96">
-                <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
-                    <i class="fa-solid fa-search"></i>
-                </span>
-                <input type="text" id="searchInput" onkeyup="filterProjects()" placeholder="Search project by name or ID (e.g. 1)..." class="w-full bg-[#161922] border border-gray-700 rounded-lg pl-10 pr-4 py-2 text-sm focus:outline-none focus:border-blue-500">
+    <div class="container">
+        <div class="action-bar">
+            <div class="search-box">
+                <input type="text" id="search-input" placeholder="Search project by name or ID (e.g. 1)..." oninput="filterProjects()">
             </div>
-            <button onclick="openCreateModal()" class="w-full md:w-auto bg-red-600 hover:bg-red-700 text-white px-5 py-2 rounded-lg font-bold text-sm flex items-center justify-center space-x-2 transition">
-                <i class="fa-solid fa-plus"></i>
-                <span>CREATE PROJECT</span>
-            </button>
+            <button class="btn-red" onclick="openProjectModal()">+ CREATE PROJECT</button>
         </div>
 
-        <!-- Projects Grid / List -->
-        <div id="projectsContainer">
-            <div id="emptyState" class="text-center py-20 border border-dashed border-gray-800 rounded-xl">
-                <p class="text-gray-500 text-sm" id="emptyText">No private projects found.</p>
-            </div>
-            <div id="projectsList" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
-        </div>
-    </main>
-
-    <!-- Create Project Modal -->
-    <div id="createModal" class="hidden fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-50">
-        <div class="bg-[#161922] border border-gray-800 rounded-xl p-6 w-full max-w-md shadow-2xl">
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="text-lg font-bold text-white">Create New Project</h3>
-                <button onclick="closeCreateModal()" class="text-gray-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
-            </div>
-            <form id="deployForm" onsubmit="uploadBot(event)" class="space-y-4">
-                <div>
-                    <label class="block text-xs font-semibold uppercase text-gray-400 mb-1">Bot Name</label>
-                    <input type="text" id="botName" required class="w-full bg-[#0f1117] border border-gray-700 rounded p-2.5 text-sm focus:outline-none focus:border-blue-500" placeholder="e.g. Siyaa">
-                </div>
-                <div>
-                    <label class="block text-xs font-semibold uppercase text-gray-400 mb-1">Discord Bot Token</label>
-                    <input type="text" id="botToken" required class="w-full bg-[#0f1117] border border-gray-700 rounded p-2.5 text-sm focus:outline-none focus:border-blue-500" placeholder="Paste bot token">
-                </div>
-                <div>
-                    <label class="block text-xs font-semibold uppercase text-gray-400 mb-1">Bot Project (.zip)</label>
-                    <input type="file" id="botZip" accept=".zip" required class="w-full text-xs text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-xs file:font-bold file:bg-blue-600 file:text-white hover:file:bg-blue-700">
-                </div>
-                <div class="flex justify-end space-x-2 pt-2">
-                    <button type="button" onclick="closeCreateModal()" class="px-4 py-2 rounded bg-gray-800 hover:bg-gray-700 text-sm font-medium">Cancel</button>
-                    <button type="submit" id="deployBtn" class="px-4 py-2 rounded bg-red-600 hover:bg-red-700 text-sm font-bold text-white">Deploy</button>
-                </div>
-            </form>
+        <div class="projects-grid" id="projects-container">
+            <div class="empty-state">No private projects found for this account. Click <b>+ CREATE PROJECT</b> to start!</div>
         </div>
     </div>
 
-    <!-- Update Modal -->
-    <div id="updateModal" class="hidden fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-50">
-        <div class="bg-[#161922] border border-gray-800 rounded-xl p-6 w-full max-w-md shadow-2xl">
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="text-lg font-bold text-white">Update Bot: <span id="updateBotNameTitle" class="text-blue-400"></span></h3>
-                <button onclick="closeUpdateModal()" class="text-gray-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+    <div id="loading-screen" class="overlay" style="background: #ffffff;">
+        <div class="spinner"></div>
+        <p id="loading-text" style="color: #374151; font-weight: bold; font-size: 16px;">Loading 𝐙𝐘𝐑𝐀𝐗™...</p>
+    </div>
+
+    <div id="username-modal" class="overlay" style="display: none;">
+        <div class="modal-box">
+            <h3>Login or Register</h3>
+            <p style="font-size: 12px; color: #6b7280; margin-bottom: 15px;">New users will automatically register with password.</p>
+            <input type="text" id="username-input" placeholder="Username">
+            <input type="password" id="password-input" placeholder="Password">
+            <button class="btn-red" style="width: 100%;" onclick="saveUsername()">Login / Continue</button>
+        </div>
+    </div>
+
+    <div id="create-modal" class="overlay" style="display: none;">
+        <div class="modal-box">
+            <h3>Create New Project</h3>
+            <input type="text" id="proj-name" placeholder="Project Name">
+            <input type="text" id="proj-token" placeholder="Bot Token">
+            
+            <div class="file-input-wrapper">
+                <label>Upload Bot File (.zip ONLY):</label>
+                <input type="file" id="proj-file">
             </div>
-            <input type="hidden" id="modalBotName">
-            <div class="space-y-4">
-                <div>
-                    <label class="block text-xs font-semibold uppercase text-gray-400 mb-1">New Token (Optional)</label>
-                    <input type="text" id="updateTokenInput" class="w-full bg-[#0f1117] border border-gray-700 rounded p-2.5 text-sm focus:outline-none focus:border-blue-500" placeholder="Leave blank to keep old">
-                </div>
-                <div>
-                    <label class="block text-xs font-semibold uppercase text-gray-400 mb-1">New Project Zip (Optional)</label>
-                    <input type="file" id="updateZipInput" accept=".zip" class="w-full text-xs text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-xs file:font-bold file:bg-blue-600 file:text-white hover:file:bg-blue-700">
-                </div>
-                <div class="flex justify-end space-x-2 pt-2">
-                    <button type="button" onclick="closeUpdateModal()" class="px-4 py-2 rounded bg-gray-800 hover:bg-gray-700 text-sm font-medium">Cancel</button>
-                    <button type="button" onclick="submitUpdateBot()" id="updateSubmitBtn" class="px-4 py-2 rounded bg-blue-600 hover:bg-blue-700 text-sm font-bold text-white">Save & Restart</button>
-                </div>
+
+            <button class="btn-red" style="width: 100%;" onclick="submitProject()">Submit & Host</button>
+            <button class="btn-secondary" style="width: 100%;" onclick="closeProjectModal()">Cancel</button>
+        </div>
+    </div>
+
+    <!-- Update Project Modal -->
+    <div id="update-modal" class="overlay" style="display: none;">
+        <div class="modal-box">
+            <h3>Update Project: <span id="update-proj-title"></span></h3>
+            <input type="hidden" id="update-proj-id">
+            <input type="hidden" id="update-proj-oldname">
+            <input type="text" id="update-proj-token" placeholder="New Bot Token (Leave blank to keep old)">
+            
+            <div class="file-input-wrapper">
+                <label>Upload New Bot File (.zip Optional):</label>
+                <input type="file" id="update-proj-file">
             </div>
+
+            <button class="btn-blue" style="width: 100%; margin-bottom: 8px;" onclick="submitUpdateProject()">Save & Restart</button>
+            <button class="btn-secondary" style="width: 100%; margin-top: 0;" onclick="closeUpdateModal()">Cancel</button>
         </div>
     </div>
 
     <script>
-        const BACKEND_URL = 'https://zyrax-backend.onrender.com';
-        
-        // Handle User Profile dynamically
-        let currentUser = localStorage.getItem('zyrax_user');
-        if (!currentUser) {
-            currentUser = prompt("Enter your username for Zyrax dashboard:") || "User";
-            localStorage.setItem('zyrax_user', currentUser);
+        const API_URL = "https://zyrax-backend.onrender.com"; 
+
+        let currentUsername = "";
+        let projects = [];
+
+        const botTokenRegex = /^[A-Za-z0-9_-]{23,28}\.[A-Za-z0-9_-]{6,7}\.[A-Za-z0-9_-]{27,38}$/;
+
+        window.onload = function() {
+            showLoading("Loading 𝐙𝐘𝐑𝐀𝐗™...", 1200, () => {
+                document.getElementById('username-modal').style.display = 'flex';
+            });
+        };
+
+        function showLoading(text, duration, callback) {
+            const loader = document.getElementById('loading-screen');
+            document.getElementById('loading-text').innerText = text;
+            loader.style.display = 'flex';
+            setTimeout(() => {
+                loader.style.display = 'none';
+                if(callback) callback();
+            }, duration);
         }
-        document.getElementById('usernameDisplay').innerText = currentUser;
-        document.getElementById('userAvatar').innerText = currentUser.charAt(0).toUpperCase();
-        document.getElementById('emptyText').innerText = `No private projects found for ${currentUser}.`;
 
-        let projects = JSON.parse(localStorage.getItem(`projects_${currentUser}`)) || [];
-        renderProjects();
+        function saveUsername() {
+            const name = document.getElementById('username-input').value.trim();
+            const pass = document.getElementById('password-input').value.trim();
 
-        function openCreateModal() { document.getElementById('createModal').classList.remove('hidden'); }
-        function closeCreateModal() { document.getElementById('createModal').classList.add('hidden'); }
-
-        function renderProjects() {
-            const list = document.getElementById('projectsList');
-            const emptyState = document.getElementById('emptyState');
-            list.innerHTML = '';
-
-            if (projects.length === 0) {
-                emptyState.style.display = 'block';
+            if(!name || !pass) {
+                alert("Please enter both Username and Password!");
                 return;
             }
-            emptyState.style.display = 'none';
 
-            projects.forEach((proj, index) => {
-                const card = document.createElement('div');
-                card.className = "bg-[#161922] border border-gray-800 rounded-xl p-4 flex items-center justify-between shadow-md";
-                card.innerHTML = `
-                    <div>
-                        <h4 class="font-bold text-white text-base">${proj.name}</h4>
-                        <span class="text-xs text-green-400 flex items-center mt-1 font-mono"><span class="w-2 h-2 rounded-full bg-green-500 inline-block mr-1.5 animate-pulse"></span> Running</span>
-                    </div>
-                    <div class="flex items-center space-x-2">
-                        <button onclick="openUpdateModal('${proj.name}')" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded text-xs font-bold transition">Update</button>
-                        <button onclick="deleteBot('${proj.name}')" class="bg-red-600/20 hover:bg-red-600 text-red-400 hover:text-white px-3 py-1.5 rounded text-xs font-bold transition">Delete</button>
-                    </div>
-                `;
-                list.appendChild(card);
+            const cleanName = name.toLowerCase();
+            let usersData = localStorage.getItem('zyrax_user_accounts');
+            let users = usersData ? JSON.parse(usersData) : {};
+
+            if (users[cleanName]) {
+                if (users[cleanName] !== pass) {
+                    alert("Incorrect Password for username: " + name);
+                    return;
+                }
+            } else {
+                users[cleanName] = pass;
+                localStorage.setItem('zyrax_user_accounts', JSON.stringify(users));
+            }
+
+            document.getElementById('username-modal').style.display = 'none';
+
+            showLoading("Logging in...", 1000, () => {
+                currentUsername = cleanName;
+                document.getElementById('user-display').innerText = "👤 " + name;
+                document.getElementById('password-input').value = '';
+                loadUserProjects();
             });
         }
 
-        async function uploadBot(event) {
-            event.preventDefault();
-            const botName = document.getElementById('botName').value.trim();
-            const token = document.getElementById('botToken').value.trim();
-            const botZip = document.getElementById('botZip').files[0];
-            const btn = document.getElementById('deployBtn');
-
-            const formData = new FormData();
-            formData.append('botName', botName);
-            formData.append('token', token);
-            formData.append('botZip', botZip);
-
-            btn.innerText = "Deploying...";
-            btn.disabled = true;
-
-            try {
-                const response = await fetch(`${BACKEND_URL}/upload`, { method: 'POST', body: formData });
-                const result = await response.json();
-                alert(result.message);
-                if (result.success) {
-                    if (!projects.some(p => p.name === botName)) {
-                        projects.push({ name: botName });
-                        localStorage.setItem(`projects_${currentUser}`, JSON.stringify(projects));
-                    }
-                    document.getElementById('deployForm').reset();
-                    closeCreateModal();
-                    renderProjects();
-                }
-            } catch (err) {
-                alert('Deployment failed: ' + err.message);
-            } finally {
-                btn.innerText = "Deploy";
-                btn.disabled = false;
-            }
+        function switchUser() {
+            document.getElementById('username-input').value = '';
+            document.getElementById('password-input').value = '';
+            document.getElementById('username-modal').style.display = 'flex';
         }
 
-        function openUpdateModal(botName) {
-            document.getElementById('modalBotName').value = botName;
-            document.getElementById('updateBotNameTitle').innerText = botName;
-            document.getElementById('updateModal').classList.remove('hidden');
+        function loadUserProjects() {
+            const storedData = localStorage.getItem(`zyrax_projects_${currentUsername}`);
+            projects = storedData ? JSON.parse(storedData) : [];
+            renderProjects(projects);
+        }
+
+        function saveUserProjects() {
+            localStorage.setItem(`zyrax_projects_${currentUsername}`, JSON.stringify(projects));
+        }
+
+        function openProjectModal() {
+            document.getElementById('create-modal').style.display = 'flex';
+        }
+
+        function closeProjectModal() {
+            document.getElementById('create-modal').style.display = 'none';
+            document.getElementById('proj-name').value = '';
+            document.getElementById('proj-token').value = '';
+            document.getElementById('proj-file').value = '';
+        }
+
+        async function submitProject() {
+            const name = document.getElementById('proj-name').value.trim();
+            const token = document.getElementById('proj-token').value.trim();
+            const fileInput = document.getElementById('proj-file');
+
+            if(!name) return alert("Please enter a Project Name!");
+            if(!botTokenRegex.test(token)) return alert("Invalid Bot Token format!");
+            if (fileInput.files.length === 0) return alert("Please select a .zip file!");
+
+            const file = fileInput.files[0];
+            if (!file.name.toLowerCase().endsWith('.zip')) return alert("Only .ZIP files are accepted.");
+
+            closeProjectModal();
+
+            showLoading("Uploading & Hosting Bot...", 3000, async () => {
+                const formData = new FormData();
+                formData.append('botName', name);
+                formData.append('token', token);
+                formData.append('botZip', file);
+
+                try {
+                    const res = await fetch(`${API_URL}/upload`, {
+                        method: 'POST',
+                        body: formData
+                    });
+                    const data = await res.json();
+
+                    if (data.success) {
+                        const newProject = {
+                            id: projects.length + 1,
+                            name: name,
+                            token: token,
+                            fileName: file.name,
+                            status: "Running"
+                        };
+                        projects.push(newProject);
+                        saveUserProjects();
+                        renderProjects(projects);
+                        alert(data.message);
+                    } else {
+                        alert("Backend Error: " + data.message);
+                    }
+                } catch (err) {
+                    alert("Failed to connect to backend server. Make sure API_URL is correct!");
+                }
+            });
+        }
+
+        function openUpdateModal(id) {
+            const proj = projects.find(p => p.id === id);
+            if (!proj) return;
+            document.getElementById('update-proj-id').value = proj.id;
+            document.getElementById('update-proj-oldname').value = proj.name;
+            document.getElementById('update-proj-title').innerText = proj.name;
+            document.getElementById('update-proj-token').value = '';
+            document.getElementById('update-proj-file').value = '';
+            document.getElementById('update-modal').style.display = 'flex';
         }
 
         function closeUpdateModal() {
-            document.getElementById('updateModal').classList.add('hidden');
-            document.getElementById('updateTokenInput').value = '';
-            document.getElementById('updateZipInput').value = '';
+            document.getElementById('update-modal').style.display = 'none';
         }
 
-        async function submitUpdateBot() {
-            const botName = document.getElementById('modalBotName').value;
-            const newToken = document.getElementById('updateTokenInput').value.trim();
-            const newZip = document.getElementById('updateZipInput').files[0];
-            const btn = document.getElementById('updateSubmitBtn');
+        async function submitUpdateProject() {
+            const id = parseInt(document.getElementById('update-proj-id').value);
+            const oldName = document.getElementById('update-proj-oldname').value;
+            const newToken = document.getElementById('update-proj-token').value.trim();
+            const fileInput = document.getElementById('update-proj-file');
 
-            const formData = new FormData();
-            formData.append('botName', botName);
-            if (newToken) formData.append('token', newToken);
-            if (newZip) formData.append('botZip', newZip);
-
-            btn.innerText = "Updating...";
-            btn.disabled = true;
-
-            try {
-                const response = await fetch(`${BACKEND_URL}/update`, { method: 'PUT', body: formData });
-                const result = await response.json();
-                alert(result.message);
-                if (result.success) {
-                    closeUpdateModal();
-                }
-            } catch (err) {
-                alert('Update failed: ' + err.message);
-            } finally {
-                btn.innerText = "Save & Restart";
-                btn.disabled = false;
+            if (newToken && !botTokenRegex.test(newToken)) {
+                return alert("Invalid Bot Token format!");
             }
+
+            let file = null;
+            if (fileInput.files.length > 0) {
+                file = fileInput.files[0];
+                if (!file.name.toLowerCase().endsWith('.zip')) {
+                    return alert("Only .ZIP files are accepted.");
+                }
+            }
+
+            closeUpdateModal();
+
+            showLoading("Updating & Restarting Bot...", 3000, async () => {
+                const formData = new FormData();
+                formData.append('botName', oldName);
+                if (newToken) formData.append('token', newToken);
+                if (file) formData.append('botZip', file);
+
+                try {
+                    const res = await fetch(`${API_URL}/update`, {
+                        method: 'PUT',
+                        body: formData
+                    });
+                    const data = await res.json();
+
+                    if (data.success) {
+                        const proj = projects.find(p => p.id === id);
+                        if (proj) {
+                            if (newToken) proj.token = newToken;
+                            if (file) proj.fileName = file.name;
+                            saveUserProjects();
+                            renderProjects(projects);
+                        }
+                        alert(data.message);
+                    } else {
+                        alert("Backend Error: " + data.message);
+                    }
+                } catch (err) {
+                    alert("Failed to connect to backend server for update!");
+                }
+            });
         }
 
-        function deleteBot(botName) {
-            if (!confirm(`Are you sure you want to delete ${botName}?`)) return;
-            projects = projects.filter(p => p.name !== botName);
-            localStorage.setItem(`projects_${currentUser}`, JSON.stringify(projects));
-            renderProjects();
+        function renderProjects(list) {
+            const container = document.getElementById('projects-container');
+            container.innerHTML = '';
+
+            if(list.length === 0) {
+                container.innerHTML = `<div class="empty-state">No private projects found for <b>${currentUsername}</b>.</div>`;
+                return;
+            }
+
+            list.forEach(proj => {
+                const card = document.createElement('div');
+                card.className = 'project-card';
+                card.innerHTML = `
+                    <div class="project-header">
+                        <span class="project-title">${proj.name}</span>
+                        <span class="project-number">#${proj.id}</span>
+                    </div>
+                    <div class="status-badge">● ${proj.status}</div>
+                    <div class="project-detail"><b>File:</b> ${proj.fileName}</div>
+                    <div class="project-detail"><b>Token:</b> ${proj.token.substring(0, 15)}...</div>
+                    <button class="btn-blue" style="margin-top: 10px; font-size: 12px; padding: 8px; width: 100%;" onclick="openUpdateModal(${proj.id})">Update Project</button>
+                    <button class="btn-red" style="margin-top: 5px; font-size: 12px; padding: 8px; width: 100%;" onclick="deleteProject(${proj.id})">Delete Project</button>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function deleteProject(id) {
+            projects = projects.filter(p => p.id !== id);
+            saveUserProjects();
+            renderProjects(projects);
         }
 
         function filterProjects() {
-            const query = document.getElementById('searchInput').value.toLowerCase();
-            const list = document.getElementById('projectsList');
-            const cards = list.children;
-            for (let card of cards) {
-                const title = card.querySelector('h4').innerText.toLowerCase();
-                card.style.display = title.includes(query) ? 'flex' : 'none';
+            const query = document.getElementById('search-input').value.trim().toLowerCase();
+            if(!query) {
+                renderProjects(projects);
+                return;
             }
+
+            const filtered = projects.filter(p => 
+                p.id.toString() === query || 
+                p.name.toLowerCase().includes(query)
+            );
+
+            renderProjects(filtered);
         }
     </script>
 </body>
 </html>
+
