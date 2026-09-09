@@ -86,10 +86,8 @@ app.post('/upload', upload.single('botZip'), (req, res) => {
         const configData = { token: cleanToken, prefix: "!", DISCORD_TOKEN: cleanToken, BOT_TOKEN: cleanToken };
         fs.writeFileSync(path.join(botFolder, 'config.json'), JSON.stringify(configData, null, 2));
 
-        // Send instant response to frontend so project shows up immediately
-        res.json({ success: true, message: `Bot '${botName}' is being deployed in background!` });
+        res.json({ success: true, message: `Bot '${botName}' deployment initiated!` });
 
-        // Run installation & execution asynchronously in background
         setImmediate(() => {
             try {
                 let runner = botTarget.runner;
@@ -99,10 +97,13 @@ app.post('/upload', upload.single('botZip'), (req, res) => {
                     const pipPath = path.join(botFolder, 'venv', 'bin', 'pip');
                     const pythonEnvPath = path.join(botFolder, 'venv', 'bin', 'python');
 
+                    // Force install all standard music bot packages
+                    console.log(`[ZYRAX] Installing discord.py, yt-dlp & PyNaCl...`);
+                    execSync(`"${pipPath}" install --upgrade pip`, { cwd: botFolder });
+                    execSync(`"${pipPath}" install discord.py yt-dlp PyNaCl requests beautifulsoup4`, { cwd: botFolder });
+
                     if (fs.existsSync(path.join(botFolder, 'requirements.txt'))) {
                         execSync(`"${pipPath}" install -r requirements.txt`, { cwd: botFolder });
-                    } else {
-                        execSync(`"${pipPath}" install discord.py PyNaCl`, { cwd: botFolder });
                     }
                     runner = pythonEnvPath;
                 } else {
