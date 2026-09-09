@@ -3,424 +3,177 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>𝐙𝐘𝐑𝐀𝐗™ | HOST SERVICE</title>
-    <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: Arial, sans-serif; }
-        body { background-color: #f4f5f7; color: #172b4d; min-height: 100vh; display: flex; flex-direction: column; }
-
-        .navbar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 15px 30px;
-            background: #ffffff;
-            border-bottom: 1px solid #e5e7eb;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.03);
-        }
-        .brand { font-size: 18px; font-weight: bold; color: #111827; }
-        .user-info { font-size: 14px; font-weight: 600; color: #374151; cursor: pointer; }
-
-        .container {
-            flex: 1;
-            max-width: 1000px;
-            width: 100%;
-            margin: 0 auto;
-            padding: 30px 20px;
-        }
-
-        .action-bar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 15px;
-            margin-bottom: 25px;
-            flex-wrap: wrap;
-        }
-
-        .search-box { flex: 1; min-width: 250px; }
-        .search-box input {
-            width: 100%;
-            padding: 12px 15px;
-            border: 1px solid #d1d5db;
-            border-radius: 8px;
-            font-size: 14px;
-            outline: none;
-            background: #ffffff;
-        }
-        .search-box input:focus { border-color: #dc2626; }
-
-        .btn-red {
-            padding: 12px 20px;
-            background-color: #dc2626;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-weight: bold;
-            font-size: 14px;
-            cursor: pointer;
-            transition: background 0.2s;
-        }
-        .btn-red:hover { background-color: #b91c1c; }
-
-        .btn-secondary {
-            padding: 12px 20px;
-            background-color: #e5e7eb;
-            color: #374151;
-            border: none;
-            border-radius: 8px;
-            font-weight: bold;
-            font-size: 14px;
-            cursor: pointer;
-            margin-top: 8px;
-        }
-        .btn-secondary:hover { background-color: #d1d5db; }
-
-        .projects-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            gap: 20px;
-        }
-
-        .project-card {
-            background: #ffffff;
-            border-radius: 12px;
-            padding: 20px;
-            border: 1px solid #e5e7eb;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-
-        .project-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .project-number {
-            background: #fee2e2;
-            color: #dc2626;
-            font-weight: bold;
-            font-size: 12px;
-            padding: 4px 8px;
-            border-radius: 6px;
-        }
-
-        .project-title { font-size: 18px; font-weight: bold; color: #111827; }
-        .project-detail { font-size: 13px; color: #6b7280; word-break: break-all; }
-
-        .status-badge {
-            display: inline-block;
-            font-size: 12px;
-            font-weight: bold;
-            color: #16a34a;
-            background: #dcfce7;
-            padding: 4px 8px;
-            border-radius: 6px;
-            width: fit-content;
-        }
-
-        .empty-state {
-            grid-column: 1 / -1;
-            text-align: center;
-            padding: 50px 20px;
-            background: #ffffff;
-            border-radius: 12px;
-            border: 1px dashed #d1d5db;
-            color: #6b7280;
-        }
-
-        .overlay {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.4);
-            backdrop-filter: blur(2px);
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-        }
-
-        .modal-box {
-            background: #ffffff;
-            padding: 25px;
-            border-radius: 12px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
-            width: 90%;
-            max-width: 400px;
-            text-align: center;
-            border: 1px solid #e5e7eb;
-        }
-
-        .modal-box h3 { margin-bottom: 15px; color: #111827; }
-        .modal-box input {
-            width: 100%;
-            padding: 12px;
-            margin-bottom: 12px;
-            border: 1px solid #d1d5db;
-            border-radius: 6px;
-            font-size: 14px;
-            outline: none;
-        }
-
-        .file-input-wrapper {
-            text-align: left;
-            margin-bottom: 15px;
-        }
-
-        .file-input-wrapper label {
-            display: block;
-            font-size: 12px;
-            font-weight: bold;
-            color: #374151;
-            margin-bottom: 5px;
-        }
-
-        .spinner {
-            width: 50px; 
-            height: 50px;
-            border: 5px solid #e5e7eb;
-            border-top: 5px solid #dc2626;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin-bottom: 15px;
-        }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-    </style>
+    <title>Zyrax Hosting Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
+<body class="bg-gray-900 text-white min-h-screen p-6">
 
-    <div class="navbar">
-        <div class="brand">𝐙𝐘𝐑𝐀𝐗™ | HOST SERVICE</div>
-        <div class="user-info" id="user-display" onclick="switchUser()">👤 Guest</div>
-    </div>
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl font-bold mb-6 text-center text-yellow-500">Zyrax Bot Hosting Panel</h1>
 
-    <div class="container">
-        <div class="action-bar">
-            <div class="search-box">
-                <input type="text" id="search-input" placeholder="Search project by name or ID (e.g. 1)..." oninput="filterProjects()">
+        <!-- Upload Form Card -->
+        <div class="bg-gray-800 p-6 rounded-lg shadow-md mb-8 border border-gray-700">
+            <h2 class="text-xl font-semibold mb-4">Deploy New Bot</h2>
+            <form id="deployForm" onsubmit="uploadBot(event)" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium mb-1">Bot Name:</label>
+                    <input type="text" id="botName" required class="w-full p-2 bg-gray-700 rounded border border-gray-600 focus:outline-none focus:border-yellow-500" placeholder="e.g. Siyaa">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1">Discord Bot Token:</label>
+                    <input type="text" id="botToken" required class="w-full p-2 bg-gray-700 rounded border border-gray-600 focus:outline-none focus:border-yellow-500" placeholder="Paste your bot token here">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1">Bot Project (.zip file):</label>
+                    <input type="file" id="botZip" accept=".zip" required class="w-full text-sm text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-yellow-600 file:text-white hover:file:bg-yellow-700">
+                </div>
+                <button type="submit" id="deployBtn" class="w-full bg-yellow-600 hover:bg-yellow-700 font-bold p-2 rounded transition duration-200">Deploy Bot</button>
+            </form>
+        </div>
+
+        <!-- Active Bots Section -->
+        <div class="bg-gray-800 p-6 rounded-lg shadow-md border border-gray-700">
+            <h2 class="text-xl font-semibold mb-4">Hosted Projects</h2>
+            <div id="projectsList" class="space-y-3">
+                <p class="text-gray-400 text-sm">Active bots will appear here after deployment.</p>
             </div>
-            <button class="btn-red" onclick="openProjectModal()">+ CREATE PROJECT</button>
-        </div>
-
-        <div class="projects-grid" id="projects-container">
-            <div class="empty-state">No private projects found for this account. Click <b>+ CREATE PROJECT</b> to start!</div>
         </div>
     </div>
 
-    <div id="loading-screen" class="overlay" style="background: #ffffff;">
-        <div class="spinner"></div>
-        <p id="loading-text" style="color: #374151; font-weight: bold; font-size: 16px;">Loading 𝐙𝐘𝐑𝐀𝐗™...</p>
-    </div>
-
-    <div id="username-modal" class="overlay" style="display: none;">
-        <div class="modal-box">
-            <h3>Login or Register</h3>
-            <p style="font-size: 12px; color: #6b7280; margin-bottom: 15px;">New users will automatically register with password.</p>
-            <input type="text" id="username-input" placeholder="Username">
-            <input type="password" id="password-input" placeholder="Password">
-            <button class="btn-red" style="width: 100%;" onclick="saveUsername()">Login / Continue</button>
-        </div>
-    </div>
-
-    <div id="create-modal" class="overlay" style="display: none;">
-        <div class="modal-box">
-            <h3>Create New Project</h3>
-            <input type="text" id="proj-name" placeholder="Project Name">
-            <input type="text" id="proj-token" placeholder="Bot Token">
+    <!-- Update Modal -->
+    <div id="updateModal" class="hidden fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4">
+        <div class="bg-gray-800 p-6 rounded-lg w-full max-w-md border border-gray-700">
+            <h3 class="text-xl font-bold mb-4">Update Bot: <span id="updateBotNameTitle" class="text-yellow-500"></span></h3>
+            <input type="hidden" id="modalBotName">
             
-            <div class="file-input-wrapper">
-                <label>Upload Bot File (.zip ONLY):</label>
-                <input type="file" id="proj-file">
+            <div class="mb-4">
+                <label class="block text-sm font-medium mb-1">New Token (Optional):</label>
+                <input type="text" id="updateTokenInput" class="w-full p-2 bg-gray-700 rounded border border-gray-600 focus:outline-none focus:border-yellow-500" placeholder="Leave blank to keep old token">
             </div>
 
-            <button class="btn-red" style="width: 100%;" onclick="submitProject()">Submit & Host</button>
-            <button class="btn-secondary" style="width: 100%;" onclick="closeProjectModal()">Cancel</button>
+            <div class="mb-6">
+                <label class="block text-sm font-medium mb-1">New Project Zip (Optional):</label>
+                <input type="file" id="updateZipInput" accept=".zip" class="w-full text-sm text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-yellow-600 file:text-white hover:file:bg-yellow-700">
+            </div>
+            
+            <div class="flex justify-end space-x-3">
+                <button onclick="closeUpdateModal()" class="bg-gray-600 hover:bg-gray-700 px-4 py-2 rounded text-sm font-medium">Cancel</button>
+                <button onclick="submitUpdateBot()" id="updateSubmitBtn" class="bg-yellow-600 hover:bg-yellow-700 px-4 py-2 rounded text-sm font-bold">Save & Restart</button>
+            </div>
         </div>
     </div>
 
     <script>
-        // Render se mila URL yahan paste karein (jab Render par deploy ho jaye)
-        const API_URL = "https://zyrax-backend.onrender.com"; 
+        const BACKEND_URL = 'https://zyrax-backend.onrender.com';
 
-        let currentUsername = "";
-        let projects = [];
+        async function uploadBot(event) {
+            event.preventDefault();
+            const botName = document.getElementById('botName').value.trim();
+            const token = document.getElementById('botToken').value.trim();
+            const botZip = document.getElementById('botZip').files[0];
+            const btn = document.getElementById('deployBtn');
 
-        const botTokenRegex = /^[A-Za-z0-9_-]{23,28}\.[A-Za-z0-9_-]{6,7}\.[A-Za-z0-9_-]{27,38}$/;
+            const formData = new FormData();
+            formData.append('botName', botName);
+            formData.append('token', token);
+            formData.append('botZip', botZip);
 
-        window.onload = function() {
-            showLoading("Loading 𝐙𝐘𝐑𝐀𝐗™...", 1200, () => {
-                document.getElementById('username-modal').style.display = 'flex';
-            });
-        };
+            btn.innerText = "Deploying...";
+            btn.disabled = true;
 
-        function showLoading(text, duration, callback) {
-            const loader = document.getElementById('loading-screen');
-            document.getElementById('loading-text').innerText = text;
-            loader.style.display = 'flex';
-            setTimeout(() => {
-                loader.style.display = 'none';
-                if(callback) callback();
-            }, duration);
-        }
-
-        function saveUsername() {
-            const name = document.getElementById('username-input').value.trim();
-            const pass = document.getElementById('password-input').value.trim();
-
-            if(!name || !pass) {
-                alert("Please enter both Username and Password!");
-                return;
-            }
-
-            const cleanName = name.toLowerCase();
-            let usersData = localStorage.getItem('zyrax_user_accounts');
-            let users = usersData ? JSON.parse(usersData) : {};
-
-            if (users[cleanName]) {
-                if (users[cleanName] !== pass) {
-                    alert("Incorrect Password for username: " + name);
-                    return;
+            try {
+                const response = await fetch(`${BACKEND_URL}/upload`, {
+                    method: 'POST',
+                    body: formData
+                });
+                const result = await response.json();
+                alert(result.message);
+                if (result.success) {
+                    document.getElementById('deployForm').reset();
+                    addProjectCard(botName);
                 }
-            } else {
-                users[cleanName] = pass;
-                localStorage.setItem('zyrax_user_accounts', JSON.stringify(users));
+            } catch (err) {
+                alert('Deployment failed: ' + err.message);
+            } finally {
+                btn.innerText = "Deploy Bot";
+                btn.disabled = false;
+            }
+        }
+
+        function addProjectCard(botName) {
+            const list = document.getElementById('projectsList');
+            // Remove default empty text if present
+            if (list.innerHTML.includes('Active bots will appear')) {
+                list.innerHTML = '';
             }
 
-            document.getElementById('username-modal').style.display = 'none';
-
-            showLoading("Logging in...", 1000, () => {
-                currentUsername = cleanName;
-                document.getElementById('user-display').innerText = "👤 " + name;
-                document.getElementById('password-input').value = '';
-                loadUserProjects();
-            });
+            const card = document.createElement('div');
+            card.className = "flex items-center justify-between bg-gray-700 p-4 rounded border border-gray-600";
+            card.id = `project-${botName}`;
+            card.innerHTML = `
+                <div>
+                    <h3 class="font-bold text-lg text-yellow-400">${botName}</h3>
+                    <span class="text-xs text-green-400 font-semibold">● Status: Running</span>
+                </div>
+                <div class="space-x-2">
+                    <button onclick="openUpdateModal('${botName}')" class="bg-yellow-600 hover:bg-yellow-700 text-white px-3 py-1.5 rounded text-sm font-medium">Update</button>
+                    <button onclick="deleteBot('${botName}')" class="bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded text-sm font-medium">Delete</button>
+                </div>
+            `;
+            list.appendChild(card);
         }
 
-        function switchUser() {
-            document.getElementById('username-input').value = '';
-            document.getElementById('password-input').value = '';
-            document.getElementById('username-modal').style.display = 'flex';
+        function openUpdateModal(botName) {
+            document.getElementById('modalBotName').value = botName;
+            document.getElementById('updateBotNameTitleinnerText' || 'updateBotNameTitle').innerText = botName;
+            document.getElementById('updateModal').classList.remove('hidden');
         }
 
-        function loadUserProjects() {
-            const storedData = localStorage.getItem(`zyrax_projects_${currentUsername}`);
-            projects = storedData ? JSON.parse(storedData) : [];
-            renderProjects(projects);
+        function closeUpdateModal() {
+            document.getElementById('updateModal').classList.add('hidden');
+            document.getElementById('updateTokenInput').value = '';
+            document.getElementById('updateZipInput').value = '';
         }
 
-        function saveUserProjects() {
-            localStorage.setItem(`zyrax_projects_${currentUsername}`, JSON.stringify(projects));
-        }
+        async function submitUpdateBot() {
+            const botName = document.getElementById('modalBotName').value;
+            const newToken = document.getElementById('updateTokenInput').value.trim();
+            const newZip = document.getElementById('updateZipInput').files[0];
+            const btn = document.getElementById('updateSubmitBtn');
 
-        function openProjectModal() {
-            document.getElementById('create-modal').style.display = 'flex';
-        }
+            const formData = new FormData();
+            formData.append('botName', botName);
+            if (newToken) formData.append('token', newToken);
+            if (newZip) formData.append('botZip', newZip);
 
-        function closeProjectModal() {
-            document.getElementById('create-modal').style.display = 'none';
-            document.getElementById('proj-name').value = '';
-            document.getElementById('proj-token').value = '';
-            document.getElementById('proj-file').value = '';
-        }
+            btn.innerText = "Updating...";
+            btn.disabled = true;
 
-        async function submitProject() {
-            const name = document.getElementById('proj-name').value.trim();
-            const token = document.getElementById('proj-token').value.trim();
-            const fileInput = document.getElementById('proj-file');
-
-            if(!name) return alert("Please enter a Project Name!");
-            if(!botTokenRegex.test(token)) return alert("Invalid Bot Token format!");
-            if (fileInput.files.length === 0) return alert("Please select a .zip file!");
-
-            const file = fileInput.files[0];
-            if (!file.name.toLowerCase().endsWith('.zip')) return alert("Only .ZIP files are accepted.");
-
-            closeProjectModal();
-
-            showLoading("Uploading & Hosting Bot...", 3000, async () => {
-                const formData = new FormData();
-                formData.append('botName', name);
-                formData.append('token', token);
-                formData.append('botZip', file);
-
-                try {
-                    const res = await fetch(`${API_URL}/upload`, {
-                        method: 'POST',
-                        body: formData
-                    });
-                    const data = await res.json();
-
-                    if (data.success) {
-                        const newProject = {
-                            id: projects.length + 1,
-                            name: name,
-                            token: token,
-                            fileName: file.name,
-                            status: "Running"
-                        };
-                        projects.push(newProject);
-                        saveUserProjects();
-                        renderProjects(projects);
-                        alert(data.message);
-                    } else {
-                        alert("Backend Error: " + data.message);
-                    }
-                } catch (err) {
-                    alert("Failed to connect to backend server. Make sure API_URL is correct!");
+            try {
+                const response = await fetch(`${BACKEND_URL}/update`, {
+                    method: 'PUT',
+                    body: formData
+                });
+                const result = await response.json();
+                alert(result.message);
+                if (result.success) {
+                    closeUpdateModal();
                 }
-            });
-        }
-
-        function renderProjects(list) {
-            const container = document.getElementById('projects-container');
-            container.innerHTML = '';
-
-            if(list.length === 0) {
-                container.innerHTML = `<div class="empty-state">No private projects found for <b>${currentUsername}</b>.</div>`;
-                return;
+            } catch (err) {
+                alert('Update failed: ' + err.message);
+            } finally {
+                btn.innerText = "Save & Restart";
+                btn.disabled = false;
             }
-
-            list.forEach(proj => {
-                const card = document.createElement('div');
-                card.className = 'project-card';
-                card.innerHTML = `
-                    <div class="project-header">
-                        <span class="project-title">${proj.name}</span>
-                        <span class="project-number">#${proj.id}</span>
-                    </div>
-                    <div class="status-badge">● ${proj.status}</div>
-                    <div class="project-detail"><b>File:</b> ${proj.fileName}</div>
-                    <div class="project-detail"><b>Token:</b> ${proj.token.substring(0, 15)}...</div>
-                    <button class="btn-red" style="margin-top: 10px; font-size: 12px; padding: 8px;" onclick="deleteProject(${proj.id})">Delete Project</button>
-                `;
-                container.appendChild(card);
-            });
         }
 
-        function deleteProject(id) {
-            projects = projects.filter(p => p.id !== id);
-            saveUserProjects();
-            renderProjects(projects);
-        }
-
-        function filterProjects() {
-            const query = document.getElementById('search-input').value.trim().toLowerCase();
-            if(!query) {
-                renderProjects(projects);
-                return;
-            }
-
-            const filtered = projects.filter(p => 
-                p.id.toString() === query || 
-                p.name.toLowerCase().includes(query)
-            );
-
-            renderProjects(filtered);
+        async function deleteBot(botName) {
+            if (!confirm(`Are you sure you want to delete ${botName}?`)) return;
+            // Aapka delete logic yahan aayega (agar route banaya ho)
+            const card = document.getElementById(`project-${botName}`);
+            if (card) card.remove();
+            alert(`Bot '${botName}' removed from list.`);
         }
     </script>
 </body>
 </html>
-
