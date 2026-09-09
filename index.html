@@ -3,68 +3,147 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Zyrax Hosting Dashboard</title>
+    <title>ZYRAX™ | HOST SERVICE</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
-<body class="bg-gray-900 text-white min-h-screen p-6">
+<body class="bg-[#0f1117] text-gray-100 min-h-screen font-sans">
 
-    <div class="max-w-4xl mx-auto">
-        <h1 class="text-3xl font-bold mb-6 text-center text-yellow-500">Zyrax Bot Hosting Panel</h1>
+    <!-- Top Navbar -->
+    <header class="border-b border-gray-800 bg-[#161922] px-6 py-4 flex items-center justify-between">
+        <div class="flex items-center space-x-2">
+            <span class="text-xl font-black tracking-wider text-white">ZYRAX™</span>
+            <span class="text-xs px-2 py-0.5 rounded bg-gray-800 text-gray-400 font-mono">HOST SERVICE</span>
+        </div>
+        <div class="flex items-center space-x-3 bg-gray-800 px-3 py-1.5 rounded-full border border-gray-700">
+            <div class="w-7 h-7 rounded-full bg-blue-600 flex items-center justify-center font-bold text-sm" id="userAvatar">U</div>
+            <span class="text-sm font-medium" id="usernameDisplay">User</span>
+        </div>
+    </header>
 
-        <!-- Upload Form Card -->
-        <div class="bg-gray-800 p-6 rounded-lg shadow-md mb-8 border border-gray-700">
-            <h2 class="text-xl font-semibold mb-4">Deploy New Bot</h2>
-            <form id="deployForm" onsubmit="uploadBot(event)" class="space-y-4">
-                <div>
-                    <label class="block text-sm font-medium mb-1">Bot Name:</label>
-                    <input type="text" id="botName" required class="w-full p-2 bg-gray-700 rounded border border-gray-600 focus:outline-none focus:border-yellow-500" placeholder="e.g. Siyaa">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium mb-1">Discord Bot Token:</label>
-                    <input type="text" id="botToken" required class="w-full p-2 bg-gray-700 rounded border border-gray-600 focus:outline-none focus:border-yellow-500" placeholder="Paste your bot token here">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium mb-1">Bot Project (.zip file):</label>
-                    <input type="file" id="botZip" accept=".zip" required class="w-full text-sm text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-yellow-600 file:text-white hover:file:bg-yellow-700">
-                </div>
-                <button type="submit" id="deployBtn" class="w-full bg-yellow-600 hover:bg-yellow-700 font-bold p-2 rounded transition duration-200">Deploy Bot</button>
-            </form>
+    <main class="max-w-5xl mx-auto p-6">
+        <!-- Controls Bar -->
+        <div class="flex flex-col md:flex-row justify-between items-center gap-4 mb-8">
+            <div class="relative w-full md:w-96">
+                <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
+                    <i class="fa-solid fa-search"></i>
+                </span>
+                <input type="text" id="searchInput" onkeyup="filterProjects()" placeholder="Search project by name or ID (e.g. 1)..." class="w-full bg-[#161922] border border-gray-700 rounded-lg pl-10 pr-4 py-2 text-sm focus:outline-none focus:border-blue-500">
+            </div>
+            <button onclick="openCreateModal()" class="w-full md:w-auto bg-red-600 hover:bg-red-700 text-white px-5 py-2 rounded-lg font-bold text-sm flex items-center justify-center space-x-2 transition">
+                <i class="fa-solid fa-plus"></i>
+                <span>CREATE PROJECT</span>
+            </button>
         </div>
 
-        <!-- Active Bots Section -->
-        <div class="bg-gray-800 p-6 rounded-lg shadow-md border border-gray-700">
-            <h2 class="text-xl font-semibold mb-4">Hosted Projects</h2>
-            <div id="projectsList" class="space-y-3">
-                <p class="text-gray-400 text-sm">Active bots will appear here after deployment.</p>
+        <!-- Projects Grid / List -->
+        <div id="projectsContainer">
+            <div id="emptyState" class="text-center py-20 border border-dashed border-gray-800 rounded-xl">
+                <p class="text-gray-500 text-sm" id="emptyText">No private projects found.</p>
             </div>
+            <div id="projectsList" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+        </div>
+    </main>
+
+    <!-- Create Project Modal -->
+    <div id="createModal" class="hidden fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-50">
+        <div class="bg-[#161922] border border-gray-800 rounded-xl p-6 w-full max-w-md shadow-2xl">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold text-white">Create New Project</h3>
+                <button onclick="closeCreateModal()" class="text-gray-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <form id="deployForm" onsubmit="uploadBot(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold uppercase text-gray-400 mb-1">Bot Name</label>
+                    <input type="text" id="botName" required class="w-full bg-[#0f1117] border border-gray-700 rounded p-2.5 text-sm focus:outline-none focus:border-blue-500" placeholder="e.g. Siyaa">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase text-gray-400 mb-1">Discord Bot Token</label>
+                    <input type="text" id="botToken" required class="w-full bg-[#0f1117] border border-gray-700 rounded p-2.5 text-sm focus:outline-none focus:border-blue-500" placeholder="Paste bot token">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase text-gray-400 mb-1">Bot Project (.zip)</label>
+                    <input type="file" id="botZip" accept=".zip" required class="w-full text-xs text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-xs file:font-bold file:bg-blue-600 file:text-white hover:file:bg-blue-700">
+                </div>
+                <div class="flex justify-end space-x-2 pt-2">
+                    <button type="button" onclick="closeCreateModal()" class="px-4 py-2 rounded bg-gray-800 hover:bg-gray-700 text-sm font-medium">Cancel</button>
+                    <button type="submit" id="deployBtn" class="px-4 py-2 rounded bg-red-600 hover:bg-red-700 text-sm font-bold text-white">Deploy</button>
+                </div>
+            </form>
         </div>
     </div>
 
     <!-- Update Modal -->
-    <div id="updateModal" class="hidden fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4">
-        <div class="bg-gray-800 p-6 rounded-lg w-full max-w-md border border-gray-700">
-            <h3 class="text-xl font-bold mb-4">Update Bot: <span id="updateBotNameTitle" class="text-yellow-500"></span></h3>
+    <div id="updateModal" class="hidden fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-50">
+        <div class="bg-[#161922] border border-gray-800 rounded-xl p-6 w-full max-w-md shadow-2xl">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold text-white">Update Bot: <span id="updateBotNameTitle" class="text-blue-400"></span></h3>
+                <button onclick="closeUpdateModal()" class="text-gray-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
             <input type="hidden" id="modalBotName">
-            
-            <div class="mb-4">
-                <label class="block text-sm font-medium mb-1">New Token (Optional):</label>
-                <input type="text" id="updateTokenInput" class="w-full p-2 bg-gray-700 rounded border border-gray-600 focus:outline-none focus:border-yellow-500" placeholder="Leave blank to keep old token">
-            </div>
-
-            <div class="mb-6">
-                <label class="block text-sm font-medium mb-1">New Project Zip (Optional):</label>
-                <input type="file" id="updateZipInput" accept=".zip" class="w-full text-sm text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-yellow-600 file:text-white hover:file:bg-yellow-700">
-            </div>
-            
-            <div class="flex justify-end space-x-3">
-                <button onclick="closeUpdateModal()" class="bg-gray-600 hover:bg-gray-700 px-4 py-2 rounded text-sm font-medium">Cancel</button>
-                <button onclick="submitUpdateBot()" id="updateSubmitBtn" class="bg-yellow-600 hover:bg-yellow-700 px-4 py-2 rounded text-sm font-bold">Save & Restart</button>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold uppercase text-gray-400 mb-1">New Token (Optional)</label>
+                    <input type="text" id="updateTokenInput" class="w-full bg-[#0f1117] border border-gray-700 rounded p-2.5 text-sm focus:outline-none focus:border-blue-500" placeholder="Leave blank to keep old">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase text-gray-400 mb-1">New Project Zip (Optional)</label>
+                    <input type="file" id="updateZipInput" accept=".zip" class="w-full text-xs text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-xs file:font-bold file:bg-blue-600 file:text-white hover:file:bg-blue-700">
+                </div>
+                <div class="flex justify-end space-x-2 pt-2">
+                    <button type="button" onclick="closeUpdateModal()" class="px-4 py-2 rounded bg-gray-800 hover:bg-gray-700 text-sm font-medium">Cancel</button>
+                    <button type="button" onclick="submitUpdateBot()" id="updateSubmitBtn" class="px-4 py-2 rounded bg-blue-600 hover:bg-blue-700 text-sm font-bold text-white">Save & Restart</button>
+                </div>
             </div>
         </div>
     </div>
 
     <script>
         const BACKEND_URL = 'https://zyrax-backend.onrender.com';
+        
+        // Handle User Profile dynamically
+        let currentUser = localStorage.getItem('zyrax_user');
+        if (!currentUser) {
+            currentUser = prompt("Enter your username for Zyrax dashboard:") || "User";
+            localStorage.setItem('zyrax_user', currentUser);
+        }
+        document.getElementById('usernameDisplay').innerText = currentUser;
+        document.getElementById('userAvatar').innerText = currentUser.charAt(0).toUpperCase();
+        document.getElementById('emptyText').innerText = `No private projects found for ${currentUser}.`;
+
+        let projects = JSON.parse(localStorage.getItem(`projects_${currentUser}`)) || [];
+        renderProjects();
+
+        function openCreateModal() { document.getElementById('createModal').classList.remove('hidden'); }
+        function closeCreateModal() { document.getElementById('createModal').classList.add('hidden'); }
+
+        function renderProjects() {
+            const list = document.getElementById('projectsList');
+            const emptyState = document.getElementById('emptyState');
+            list.innerHTML = '';
+
+            if (projects.length === 0) {
+                emptyState.style.display = 'block';
+                return;
+            }
+            emptyState.style.display = 'none';
+
+            projects.forEach((proj, index) => {
+                const card = document.createElement('div');
+                card.className = "bg-[#161922] border border-gray-800 rounded-xl p-4 flex items-center justify-between shadow-md";
+                card.innerHTML = `
+                    <div>
+                        <h4 class="font-bold text-white text-base">${proj.name}</h4>
+                        <span class="text-xs text-green-400 flex items-center mt-1 font-mono"><span class="w-2 h-2 rounded-full bg-green-500 inline-block mr-1.5 animate-pulse"></span> Running</span>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <button onclick="openUpdateModal('${proj.name}')" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded text-xs font-bold transition">Update</button>
+                        <button onclick="deleteBot('${proj.name}')" class="bg-red-600/20 hover:bg-red-600 text-red-400 hover:text-white px-3 py-1.5 rounded text-xs font-bold transition">Delete</button>
+                    </div>
+                `;
+                list.appendChild(card);
+            });
+        }
 
         async function uploadBot(event) {
             event.preventDefault();
@@ -82,50 +161,29 @@
             btn.disabled = true;
 
             try {
-                const response = await fetch(`${BACKEND_URL}/upload`, {
-                    method: 'POST',
-                    body: formData
-                });
+                const response = await fetch(`${BACKEND_URL}/upload`, { method: 'POST', body: formData });
                 const result = await response.json();
                 alert(result.message);
                 if (result.success) {
+                    if (!projects.some(p => p.name === botName)) {
+                        projects.push({ name: botName });
+                        localStorage.setItem(`projects_${currentUser}`, JSON.stringify(projects));
+                    }
                     document.getElementById('deployForm').reset();
-                    addProjectCard(botName);
+                    closeCreateModal();
+                    renderProjects();
                 }
             } catch (err) {
                 alert('Deployment failed: ' + err.message);
             } finally {
-                btn.innerText = "Deploy Bot";
+                btn.innerText = "Deploy";
                 btn.disabled = false;
             }
         }
 
-        function addProjectCard(botName) {
-            const list = document.getElementById('projectsList');
-            // Remove default empty text if present
-            if (list.innerHTML.includes('Active bots will appear')) {
-                list.innerHTML = '';
-            }
-
-            const card = document.createElement('div');
-            card.className = "flex items-center justify-between bg-gray-700 p-4 rounded border border-gray-600";
-            card.id = `project-${botName}`;
-            card.innerHTML = `
-                <div>
-                    <h3 class="font-bold text-lg text-yellow-400">${botName}</h3>
-                    <span class="text-xs text-green-400 font-semibold">● Status: Running</span>
-                </div>
-                <div class="space-x-2">
-                    <button onclick="openUpdateModal('${botName}')" class="bg-yellow-600 hover:bg-yellow-700 text-white px-3 py-1.5 rounded text-sm font-medium">Update</button>
-                    <button onclick="deleteBot('${botName}')" class="bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded text-sm font-medium">Delete</button>
-                </div>
-            `;
-            list.appendChild(card);
-        }
-
         function openUpdateModal(botName) {
             document.getElementById('modalBotName').value = botName;
-            document.getElementById('updateBotNameTitleinnerText' || 'updateBotNameTitle').innerText = botName;
+            document.getElementById('updateBotNameTitle').innerText = botName;
             document.getElementById('updateModal').classList.remove('hidden');
         }
 
@@ -150,10 +208,7 @@
             btn.disabled = true;
 
             try {
-                const response = await fetch(`${BACKEND_URL}/update`, {
-                    method: 'PUT',
-                    body: formData
-                });
+                const response = await fetch(`${BACKEND_URL}/update`, { method: 'PUT', body: formData });
                 const result = await response.json();
                 alert(result.message);
                 if (result.success) {
@@ -167,12 +222,21 @@
             }
         }
 
-        async function deleteBot(botName) {
+        function deleteBot(botName) {
             if (!confirm(`Are you sure you want to delete ${botName}?`)) return;
-            // Aapka delete logic yahan aayega (agar route banaya ho)
-            const card = document.getElementById(`project-${botName}`);
-            if (card) card.remove();
-            alert(`Bot '${botName}' removed from list.`);
+            projects = projects.filter(p => p.name !== botName);
+            localStorage.setItem(`projects_${currentUser}`, JSON.stringify(projects));
+            renderProjects();
+        }
+
+        function filterProjects() {
+            const query = document.getElementById('searchInput').value.toLowerCase();
+            const list = document.getElementById('projectsList');
+            const cards = list.children;
+            for (let card of cards) {
+                const title = card.querySelector('h4').innerText.toLowerCase();
+                card.style.display = title.includes(query) ? 'flex' : 'none';
+            }
         }
     </script>
 </body>
