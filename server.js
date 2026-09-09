@@ -81,59 +81,58 @@ app.post('/upload', upload.single('botZip'), (req, res) => {
         const botFolder = botTarget.cwd;
         const cleanToken = token.trim();
 
-        // Write environment & config files
         fs.writeFileSync(path.join(botFolder, '.env'), `TOKEN=${cleanToken}\nDISCORD_TOKEN=${cleanToken}\nBOT_TOKEN=${cleanToken}\nPREFIX=!`);
+        
         const configData = { token: cleanToken, prefix: "!", DISCORD_TOKEN: cleanToken, BOT_TOKEN: cleanToken };
         fs.writeFileSync(path.join(botFolder, 'config.json'), JSON.stringify(configData, null, 2));
 
-        if (botTarget.runner === 'python3') {
-            console.log(`[ZYRAX] Creating Python Virtual Environment for ${botName}...`);
-            try {
-                execSync('python3 -m venv venv', { cwd: botFolder, stdio: 'inherit' });
-                
-                const pipPath = path.join(botFolder, 'venv', 'bin', 'pip');
-                const pythonEnvPath = path.join(botFolder, 'venv', 'bin', 'python');
+        // Send instant response to frontend so project shows up immediately
+        res.json({ success: true, message: `Bot '${botName}' is being deployed in background!` });
 
-                if (fs.existsSync(path.join(botFolder, 'requirements.txt'))) {
-                    console.log(`[ZYRAX] Installing requirements.txt inside venv...`);
-                    execSync(`"${pipPath}" install -r requirements.txt`, { cwd: botFolder, stdio: 'inherit' });
+        // Run installation & execution asynchronously in background
+        setImmediate(() => {
+            try {
+                let runner = botTarget.runner;
+                if (runner === 'python3') {
+                    console.log(`[ZYRAX] Setting up Python venv for ${botName}...`);
+                    execSync('python3 -m venv venv', { cwd: botFolder });
+                    const pipPath = path.join(botFolder, 'venv', 'bin', 'pip');
+                    const pythonEnvPath = path.join(botFolder, 'venv', 'bin', 'python');
+
+                    if (fs.existsSync(path.join(botFolder, 'requirements.txt'))) {
+                        execSync(`"${pipPath}" install -r requirements.txt`, { cwd: botFolder });
+                    } else {
+                        execSync(`"${pipPath}" install discord.py PyNaCl`, { cwd: botFolder });
+                    }
+                    runner = pythonEnvPath;
                 } else {
-                    console.log(`[ZYRAX] Installing discord.py inside venv...`);
-                    execSync(`"${pipPath}" install discord.py PyNaCl`, { cwd: botFolder, stdio: 'inherit' });
+                    console.log(`[ZYRAX] Installing Node modules for ${botName}...`);
+                    if (fs.existsSync(path.join(botFolder, 'package.json'))) {
+                        execSync('npm install --production', { cwd: botFolder });
+                    }
                 }
 
-                // Override runner to use venv python
-                botTarget.runner = pythonEnvPath;
-            } catch (e) {
-                console.error("Venv setup error:", e.message);
-            }
-        } else {
-            console.log(`[ZYRAX] Installing Node.js packages for ${botName}...`);
-            if (fs.existsSync(path.join(botFolder, 'package.json'))) {
-                try {
-                    execSync('npm install --production', { cwd: botFolder, stdio: 'inherit' });
-                } catch (e) {}
-            }
-        }
+                console.log(`[ZYRAX] Launching bot process for ${botName}...`);
+                const child = spawn(runner, [botTarget.entry], { 
+                    cwd: botFolder, 
+                    env: { ...process.env, TOKEN: cleanToken, DISCORD_TOKEN: cleanToken, BOT_TOKEN: cleanToken } 
+                });
 
-        console.log(`[ZYRAX] Starting bot '${botName}'...`);
-
-        const child = spawn(botTarget.runner, [botTarget.entry], { 
-            cwd: botFolder, 
-            env: { ...process.env, TOKEN: cleanToken, DISCORD_TOKEN: cleanToken, BOT_TOKEN: cleanToken } 
+                child.stdout.on('data', (data) => console.log(`[BOT ${botName}]: ${data}`));
+                child.stderr.on('data', (data) => console.error(`[BOT ERR ${botName}]: ${data}`));
+            } catch (bgErr) {
+                console.error(`[BACKGROUND ERROR for ${botName}]:`, bgErr.message);
+            }
         });
 
-        child.stdout.on('data', (data) => console.log(`[BOT]: ${data}`));
-        child.stderr.on('data', (data) => console.error(`[BOT ERROR]: ${data}`));
-
-        res.json({ success: true, message: `Bot '${botName}' started successfully!` });
     } catch (err) {
         console.error("Upload error:", err);
-        res.status(500).json({ success: false, message: err.message });
+        if (!res.headersSent) {
+            res.status(500).json({ success: false, message: err.message });
+        }
     }
 });
 
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
 });
-      
