@@ -18,33 +18,47 @@ app.get('/', (req, res) => {
     res.send('Zyrax Backend Server Active & Running!');
 });
 
-// Helper: Zip ke andar kisi bhi subfolder me main file dhundhne ke liye
-function findBotDirectoryAndEntry(dir) {
-    // 1. Check package.json
+// Recursive function to locate main bot file or directory
+function locateBotEntry(dir) {
     const pkgPath = path.join(dir, 'package.json');
     if (fs.existsSync(pkgPath)) {
         try {
             const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
             if (pkg.main && fs.existsSync(path.join(dir, pkg.main))) {
-                return { cwd: dir, entry: pkg.main };
+                return { cwd: dir, entry: pkg.main, runner: 'node' };
+            }
+            if (pkg.scripts && pkg.scripts.start) {
+                return { cwd: dir, entry: 'npm', isScript: true };
             }
         } catch(e) {}
     }
 
-    // 2. Common filenames check karein
-    const candidates = ['index.js', 'bot.js', 'main.js', 'app.js', 'src/index.js'];
-    for (const file of candidates) {
+    const jsCandidates = ['index.js', 'bot.js', 'main.js', 'app.js', 'src/index.js', 'src/bot.js'];
+    for (const file of jsCandidates) {
         if (fs.existsSync(path.join(dir, file))) {
-            return { cwd: dir, entry: file };
+            return { cwd: dir, entry: file, runner: 'node' };
         }
     }
 
-    // 3. Agar Zip ke andar koi subfolder ho, to uske andar search karein
+    const tsCandidates = ['index.ts', 'bot.ts', 'src/index.ts', 'src/bot.ts'];
+    for (const file of tsCandidates) {
+        if (fs.existsSync(path.join(dir, file))) {
+            return { cwd: dir, entry: file, runner: 'ts-node' };
+        }
+    }
+
+    const pyCandidates = ['main.py', 'bot.py', 'index.py'];
+    for (const file of pyCandidates) {
+        if (fs.existsSync(path.join(dir, file))) {
+            return { cwd: dir, entry: file, runner: 'python3' };
+        }
+    }
+
     const items = fs.readdirSync(dir);
     for (const item of items) {
         const fullPath = path.join(dir, item);
         if (fs.statSync(fullPath).isDirectory() && item !== 'node_modules' && !item.startsWith('.')) {
-            const result = findBotDirectoryAndEntry(fullPath);
+            const result = locateBotEntry(fullPath);
             if (result) return result;
         }
     }
@@ -65,56 +79,47 @@ app.post('/upload', upload.single('botZip'), (req, res) => {
         }
         fs.mkdirSync(rawBotFolder, { recursive: true });
 
-        // Extract ZIP
         const zip = new admZip(req.file.path);
         zip.extractAllTo(rawBotFolder, true);
-
         if (fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
 
-        // Auto-detect bot subfolder & main file
-        const botTarget = findBotDirectoryAndEntry(rawBotFolder);
+        const botTarget = locateBotEntry(rawBotFolder);
 
         if (!botTarget) {
             return res.status(400).json({ 
                 success: false, 
-                message: 'ZIP me main file (index.js / bot.js / main.js) nahi mili.' 
+                message: 'ZIP contents incompatible. No valid entry file found.' 
             });
         }
 
         const botFolder = botTarget.cwd;
-        const entryFile = botTarget.entry;
-
-        console.log(`[ZYRAX] Bot Directory: ${botFolder}`);
-        console.log(`[ZYRAX] Launching File: ${entryFile}`);
-
-        // Generate .env & config.json
         fs.writeFileSync(path.join(botFolder, '.env'), `TOKEN=${token}\nDISCORD_TOKEN=${token}\nBOT_TOKEN=${token}\nPREFIX=!`);
         
         const configData = { token: token, prefix: "!", DISCORD_TOKEN: token, BOT_TOKEN: token };
         fs.writeFileSync(path.join(botFolder, 'config.json'), JSON.stringify(configData, null, 2));
 
-        console.log(`[ZYRAX] Installing npm modules for ${botName}...`);
-
         if (fs.existsSync(path.join(botFolder, 'package.json'))) {
             try {
                 execSync('npm install --production', { cwd: botFolder, stdio: 'inherit' });
             } catch (e) {
-                console.error("[ZYRAX] npm install warning:", e.message);
+                console.error("npm install warning:", e.message);
             }
         }
 
-        console.log(`[ZYRAX] Starting process for ${botName}...`);
-
-        // Launch Bot Process
-        const child = spawn('node', [entryFile], { cwd: botFolder, stdio: 'inherit' });
+        let child;
+        if (botTarget.isScript) {
+            child = spawn('npm', ['start'], { cwd: botFolder, stdio: 'inherit' });
+        } else {
+            child = spawn(botTarget.runner, [botTarget.entry], { cwd: botFolder, stdio: 'inherit' });
+        }
 
         child.on('error', (err) => {
-            console.error(`[ZYRAX ERROR] Bot failed to start: ${err.message}`);
+            console.error(`Bot start error: ${err.message}`);
         });
 
-        res.json({ success: true, message: `Bot '${botName}' started successfully!` });
+        res.json({ success: true, message: `Bot '${botName}' hosted successfully!` });
     } catch (err) {
-        console.error("[ZYRAX ERROR]", err);
+        console.error("Upload error:", err);
         res.status(500).json({ success: false, message: err.message });
     }
 });
