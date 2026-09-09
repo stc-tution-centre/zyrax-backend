@@ -18,8 +18,16 @@ app.get('/', (req, res) => {
     res.send('Zyrax Backend Server Active & Running!');
 });
 
-// Recursive function to locate main bot file or directory
 function locateBotEntry(dir) {
+    // Check for Python bot files
+    const pyCandidates = ['main.py', 'bot.py', 'index.py'];
+    for (const file of pyCandidates) {
+        if (fs.existsSync(path.join(dir, file))) {
+            return { cwd: dir, entry: file, runner: 'python3' };
+        }
+    }
+
+    // Check package.json for Node.js
     const pkgPath = path.join(dir, 'package.json');
     if (fs.existsSync(pkgPath)) {
         try {
@@ -27,30 +35,13 @@ function locateBotEntry(dir) {
             if (pkg.main && fs.existsSync(path.join(dir, pkg.main))) {
                 return { cwd: dir, entry: pkg.main, runner: 'node' };
             }
-            if (pkg.scripts && pkg.scripts.start) {
-                return { cwd: dir, entry: 'npm', isScript: true };
-            }
         } catch(e) {}
     }
 
-    const jsCandidates = ['index.js', 'bot.js', 'main.js', 'app.js', 'src/index.js', 'src/bot.js'];
+    const jsCandidates = ['index.js', 'bot.js', 'main.js', 'app.js', 'src/index.js'];
     for (const file of jsCandidates) {
         if (fs.existsSync(path.join(dir, file))) {
             return { cwd: dir, entry: file, runner: 'node' };
-        }
-    }
-
-    const tsCandidates = ['index.ts', 'bot.ts', 'src/index.ts', 'src/bot.ts'];
-    for (const file of tsCandidates) {
-        if (fs.existsSync(path.join(dir, file))) {
-            return { cwd: dir, entry: file, runner: 'ts-node' };
-        }
-    }
-
-    const pyCandidates = ['main.py', 'bot.py', 'index.py'];
-    for (const file of pyCandidates) {
-        if (fs.existsSync(path.join(dir, file))) {
-            return { cwd: dir, entry: file, runner: 'python3' };
         }
     }
 
@@ -86,38 +77,52 @@ app.post('/upload', upload.single('botZip'), (req, res) => {
         const botTarget = locateBotEntry(rawBotFolder);
 
         if (!botTarget) {
-            return res.status(400).json({ 
-                success: false, 
-                message: 'ZIP contents incompatible. No valid entry file found.' 
-            });
+            return res.status(400).json({ success: false, message: 'No valid entry file found.' });
         }
 
         const botFolder = botTarget.cwd;
-        fs.writeFileSync(path.join(botFolder, '.env'), `TOKEN=${token}\nDISCORD_TOKEN=${token}\nBOT_TOKEN=${token}\nPREFIX=!`);
+        const cleanToken = token.trim();
+
+        // Environment variables
+        fs.writeFileSync(path.join(botFolder, '.env'), `TOKEN=${cleanToken}\nDISCORD_TOKEN=${cleanToken}\nBOT_TOKEN=${cleanToken}\nPREFIX=!`);
         
-        const configData = { token: token, prefix: "!", DISCORD_TOKEN: token, BOT_TOKEN: token };
+        const configData = { token: cleanToken, prefix: "!", DISCORD_TOKEN: cleanToken, BOT_TOKEN: cleanToken };
         fs.writeFileSync(path.join(botFolder, 'config.json'), JSON.stringify(configData, null, 2));
 
-        if (fs.existsSync(path.join(botFolder, 'package.json'))) {
-            try {
-                execSync('npm install --production', { cwd: botFolder, stdio: 'inherit' });
-            } catch (e) {
-                console.error("npm install warning:", e.message);
+        // Install dependencies based on project type
+        if (botTarget.runner === 'python3') {
+            console.log(`[ZYRAX] Installing Python requirements for ${botName}...`);
+            if (fs.existsSync(path.join(botFolder, 'requirements.txt'))) {
+                try {
+                    execSync('pip3 install -r requirements.txt', { cwd: botFolder, stdio: 'inherit' });
+                } catch (e) {
+                    console.error("pip install warning:", e.message);
+                }
+            } else {
+                try {
+                    execSync('pip3 install discord.py', { cwd: botFolder, stdio: 'inherit' });
+                } catch (e) {}
+            }
+        } else {
+            console.log(`[ZYRAX] Installing Node.js packages for ${botName}...`);
+            if (fs.existsSync(path.join(botFolder, 'package.json'))) {
+                try {
+                    execSync('npm install --production', { cwd: botFolder, stdio: 'inherit' });
+                } catch (e) {}
             }
         }
 
-        let child;
-        if (botTarget.isScript) {
-            child = spawn('npm', ['start'], { cwd: botFolder, stdio: 'inherit' });
-        } else {
-            child = spawn(botTarget.runner, [botTarget.entry], { cwd: botFolder, stdio: 'inherit' });
-        }
+        console.log(`[ZYRAX] Starting bot '${botName}' using ${botTarget.runner} ${botTarget.entry}...`);
 
-        child.on('error', (err) => {
-            console.error(`Bot start error: ${err.message}`);
+        const child = spawn(botTarget.runner, [botTarget.entry], { 
+            cwd: botFolder, 
+            env: { ...process.env, TOKEN: cleanToken, DISCORD_TOKEN: cleanToken, BOT_TOKEN: cleanToken } 
         });
 
-        res.json({ success: true, message: `Bot '${botName}' hosted successfully!` });
+        child.stdout.on('data', (data) => console.log(`[BOT]: ${data}`));
+        child.stderr.on('data', (data) => console.error(`[BOT ERROR]: ${data}`));
+
+        res.json({ success: true, message: `Bot '${botName}' started successfully!` });
     } catch (err) {
         console.error("Upload error:", err);
         res.status(500).json({ success: false, message: err.message });
@@ -127,3 +132,4 @@ app.post('/upload', upload.single('botZip'), (req, res) => {
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
 });
+
