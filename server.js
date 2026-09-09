@@ -19,7 +19,6 @@ app.get('/', (req, res) => {
 });
 
 function locateBotEntry(dir) {
-    // Check for Python bot files
     const pyCandidates = ['main.py', 'bot.py', 'index.py'];
     for (const file of pyCandidates) {
         if (fs.existsSync(path.join(dir, file))) {
@@ -27,7 +26,6 @@ function locateBotEntry(dir) {
         }
     }
 
-    // Check package.json for Node.js
     const pkgPath = path.join(dir, 'package.json');
     if (fs.existsSync(pkgPath)) {
         try {
@@ -83,25 +81,31 @@ app.post('/upload', upload.single('botZip'), (req, res) => {
         const botFolder = botTarget.cwd;
         const cleanToken = token.trim();
 
-        // Environment variables
+        // Write environment & config files
         fs.writeFileSync(path.join(botFolder, '.env'), `TOKEN=${cleanToken}\nDISCORD_TOKEN=${cleanToken}\nBOT_TOKEN=${cleanToken}\nPREFIX=!`);
-        
         const configData = { token: cleanToken, prefix: "!", DISCORD_TOKEN: cleanToken, BOT_TOKEN: cleanToken };
         fs.writeFileSync(path.join(botFolder, 'config.json'), JSON.stringify(configData, null, 2));
 
-        // Install dependencies based on project type
         if (botTarget.runner === 'python3') {
-            console.log(`[ZYRAX] Installing Python requirements for ${botName}...`);
-            if (fs.existsSync(path.join(botFolder, 'requirements.txt'))) {
-                try {
-                    execSync('pip3 install -r requirements.txt', { cwd: botFolder, stdio: 'inherit' });
-                } catch (e) {
-                    console.error("pip install warning:", e.message);
+            console.log(`[ZYRAX] Creating Python Virtual Environment for ${botName}...`);
+            try {
+                execSync('python3 -m venv venv', { cwd: botFolder, stdio: 'inherit' });
+                
+                const pipPath = path.join(botFolder, 'venv', 'bin', 'pip');
+                const pythonEnvPath = path.join(botFolder, 'venv', 'bin', 'python');
+
+                if (fs.existsSync(path.join(botFolder, 'requirements.txt'))) {
+                    console.log(`[ZYRAX] Installing requirements.txt inside venv...`);
+                    execSync(`"${pipPath}" install -r requirements.txt`, { cwd: botFolder, stdio: 'inherit' });
+                } else {
+                    console.log(`[ZYRAX] Installing discord.py inside venv...`);
+                    execSync(`"${pipPath}" install discord.py PyNaCl`, { cwd: botFolder, stdio: 'inherit' });
                 }
-            } else {
-                try {
-                    execSync('pip3 install discord.py', { cwd: botFolder, stdio: 'inherit' });
-                } catch (e) {}
+
+                // Override runner to use venv python
+                botTarget.runner = pythonEnvPath;
+            } catch (e) {
+                console.error("Venv setup error:", e.message);
             }
         } else {
             console.log(`[ZYRAX] Installing Node.js packages for ${botName}...`);
@@ -112,7 +116,7 @@ app.post('/upload', upload.single('botZip'), (req, res) => {
             }
         }
 
-        console.log(`[ZYRAX] Starting bot '${botName}' using ${botTarget.runner} ${botTarget.entry}...`);
+        console.log(`[ZYRAX] Starting bot '${botName}'...`);
 
         const child = spawn(botTarget.runner, [botTarget.entry], { 
             cwd: botFolder, 
@@ -132,4 +136,4 @@ app.post('/upload', upload.single('botZip'), (req, res) => {
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
 });
-
+      
