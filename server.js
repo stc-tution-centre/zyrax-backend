@@ -41,7 +41,6 @@ app.get('/bots', (req, res) => {
     }
 });
 
-// Universal Upload - Supports ANY Language / ANY File structure
 app.post('/upload', upload.any(), (req, res) => {
     handleUniversalDeployment(req, res);
 });
@@ -72,7 +71,6 @@ function handleUniversalDeployment(req, res, isUpdate = false) {
             fs.unlinkSync(file.path);
         }
 
-        // Handle nested folders automatically (if zip contains a single root folder)
         let actualWorkDir = botFolderPath;
         const items = fs.readdirSync(botFolderPath);
         if (items.length === 1) {
@@ -83,11 +81,8 @@ function handleUniversalDeployment(req, res, isUpdate = false) {
         }
 
         botLogs[botName] = [];
-
-        // Universal Detection & Execution
         const files = fs.readdirSync(actualWorkDir);
 
-        // 1. Node.js / JavaScript / TypeScript
         if (fs.existsSync(path.join(actualWorkDir, 'package.json'))) {
             const installProc = spawn('npm', ['install'], { cwd: actualWorkDir, shell: true });
             installProc.on('close', (code) => {
@@ -102,9 +97,7 @@ function handleUniversalDeployment(req, res, isUpdate = false) {
                 }
                 startBotProcess('node', [entryPoint], actualWorkDir, botName);
             });
-        } 
-        // 2. Python (Any .py file like run_bot.py, main.py, bot.py, etc.)
-        else {
+        } else {
             let scriptName = null;
             const priorities = ['run_bot.py', 'main.py', 'bot.py', 'app.py', 'index.py'];
             for (let p of priorities) {
@@ -125,27 +118,22 @@ function handleUniversalDeployment(req, res, isUpdate = false) {
                     fs.writeFileSync(reqPath, 'discord.py\nPyNaCl\nrequests\n');
                 }
 
-                const pipProc = spawn('pip', ['install', '-r', 'requirements.txt'], { cwd: actualWorkDir, shell: true });
-                pipProc.on('close', () => {
-                    startBotProcess('python', [scriptName], actualWorkDir, botName);
+                const pipProc = spawn('python3', ['-m', 'pip', 'install', '-r', 'requirements.txt'], { cwd: actualWorkDir, shell: true });
+                pipProc.on('close', (code) => {
+                    startBotProcess('python3', [scriptName], actualWorkDir, botName);
                 });
-            } 
-            // 3. Java (.jar)
-            else if (files.some(f => f.endsWith('.jar'))) {
+            } else if (files.some(f => f.endsWith('.jar'))) {
                 const jarFile = files.find(f => f.endsWith('.jar'));
                 startBotProcess('java', ['-jar', jarFile], actualWorkDir, botName);
-            } 
-            // 4. Fallback for other scripts
-            else {
+            } else {
                 const anyScript = files.find(f => f.endsWith('.js') || f.endsWith('.py') || f.endsWith('.sh') || f.endsWith('.rb') || f.endsWith('.go'));
                 if (anyScript) {
                     const ext = path.extname(anyScript);
                     if (ext === '.js') startBotProcess('node', [anyScript], actualWorkDir, botName);
-                    else if (ext === '.py') startBotProcess('python', [anyScript], actualWorkDir, botName);
-                    else if (ext === '.go') startBotProcess('go', ['run', anyScript], actualWorkDir, botName);
+                    else if (ext === '.py') startBotProcess('python3', [anyScript], actualWorkDir, botName);
                     else startBotProcess('node', [anyScript], actualWorkDir, botName);
                 } else {
-                    return res.status(400).json({ error: 'No executable script or recognized structure found in zip!' });
+                    return res.status(400).json({ error: 'No executable script found in zip!' });
                 }
             }
         }
