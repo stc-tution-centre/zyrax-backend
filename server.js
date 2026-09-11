@@ -120,14 +120,15 @@ function handleUniversalDeployment(req, res, isUpdate = false) {
             }
 
             if (scriptName) {
-                if (fs.existsSync(path.join(actualWorkDir, 'requirements.txt'))) {
-                    const pipProc = spawn('pip', ['install', '-r', 'requirements.txt'], { cwd: actualWorkDir, shell: true });
-                    pipProc.on('close', () => {
-                        startBotProcess('python', [scriptName], actualWorkDir, botName);
-                    });
-                } else {
-                    startBotProcess('python', [scriptName], actualWorkDir, botName);
+                const reqPath = path.join(actualWorkDir, 'requirements.txt');
+                if (!fs.existsSync(reqPath)) {
+                    fs.writeFileSync(reqPath, 'discord.py\nPyNaCl\nrequests\n');
                 }
+
+                const pipProc = spawn('pip', ['install', '-r', 'requirements.txt'], { cwd: actualWorkDir, shell: true });
+                pipProc.on('close', () => {
+                    startBotProcess('python', [scriptName], actualWorkDir, botName);
+                });
             } 
             // 3. Java (.jar)
             else if (files.some(f => f.endsWith('.jar'))) {
