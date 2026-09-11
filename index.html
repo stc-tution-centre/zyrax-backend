@@ -381,9 +381,15 @@
                         method: 'POST',
                         body: formData
                     });
-                    const data = await res.json();
+                    
+                    let data;
+                    try {
+                        data = await res.json();
+                    } catch (parseErr) {
+                        throw new Error(`Server returned status ${res.status} without valid JSON response.`);
+                    }
 
-                    if (data.success) {
+                    if (res.ok && data.success) {
                         const newProject = {
                             id: projects.length + 1,
                             name: name,
@@ -394,12 +400,12 @@
                         projects.push(newProject);
                         saveUserProjects();
                         renderProjects(projects);
-                        alert(data.message);
+                        alert(data.message || "Bot deployed successfully!");
                     } else {
-                        alert("Backend Error: " + data.message);
+                        alert("Backend Error: " + (data.error || data.message || "Unknown server error"));
                     }
                 } catch (err) {
-                    alert("Failed to connect to backend server. Make sure API_URL is correct!");
+                    alert("Failed to connect or deploy: " + err.message);
                 }
             });
         }
@@ -450,9 +456,15 @@
                         method: 'PUT',
                         body: formData
                     });
-                    const data = await res.json();
+                    
+                    let data;
+                    try {
+                        data = await res.json();
+                    } catch (parseErr) {
+                        throw new Error(`Server returned status ${res.status} without valid JSON response.`);
+                    }
 
-                    if (data.success) {
+                    if (res.ok && data.success) {
                         const proj = projects.find(p => p.id === id);
                         if (proj) {
                             if (newToken) proj.token = newToken;
@@ -460,12 +472,12 @@
                             saveUserProjects();
                             renderProjects(projects);
                         }
-                        alert(data.message);
+                        alert(data.message || "Bot updated successfully!");
                     } else {
-                        alert("Backend Error: " + data.message);
+                        alert("Backend Error: " + (data.error || data.message || "Unknown server error"));
                     }
                 } catch (err) {
-                    alert("Failed to connect to backend server for update!");
+                    alert("Failed to connect or update: " + err.message);
                 }
             });
         }
@@ -520,4 +532,3 @@
     </script>
 </body>
 </html>
-
