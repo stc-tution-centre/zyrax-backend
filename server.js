@@ -47,7 +47,7 @@ app.get('/bots', (req, res) => {
 // 3. Universal Upload, Auto-Detect Language, Install Deps & Run Bot
 app.post('/upload', upload.any(), (req, res) => {
     if (!req.files || req.files.length === 0) return res.status(400).json({ error: 'No file uploaded!' });
-const file = req.files[0];
+    const file = req.files[0];
 
     const botName = req.body.botName || req.body.name || `bot_${Date.now()}`;
     const botFolderPath = path.join(botsDir, botName);
@@ -106,6 +106,66 @@ const file = req.files[0];
         }
 
         res.json({ success: true, message: `Bot [${botName}] uploaded and deploying successfully!` });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// 3.5. Update existing bot (Token or Zip)
+app.put('/update', upload.any(), (req, res) => {
+    const botName = req.body.botName;
+    if (!botName) return res.status(400).json({ error: 'Bot name is required for update!' });
+
+    const botFolderPath = path.join(botsDir, botName);
+
+    try {
+        if (req.files && req.files.length > 0) {
+            const file = req.files[0];
+            const zip = new AdmZip(file.path);
+            
+            if (runningProcesses[botName]) {
+                runningProcesses[botName].kill();
+                delete runningProcesses[botName];
+            }
+
+            if (fs.existsSync(botFolderPath)) {
+                fs.rmSync(botFolderPath, { recursive: true, force: true });
+            }
+
+            zip.extractAllTo(botFolderPath, true);
+            fs.unlinkSync(file.path);
+
+            botLogs[botName] = [];
+
+            if (fs.existsSync(path.join(botFolderPath, 'package.json'))) {
+                const installProc = spawn('npm', ['install'], { cwd: botFolderPath, shell: true });
+                installProc.on('close', (code) => {
+                    if (code === 0) {
+                        let entryPoint = 'index.js';
+                        try {
+                            const pkg = JSON.parse(fs.readFileSync(path.join(botFolderPath, 'package.json'), 'utf8'));
+                            if (pkg.main) entryPoint = pkg.main;
+                        } catch (e) {}
+                        if (!fs.existsSync(path.join(botFolderPath, entryPoint))) {
+                            entryPoint = fs.existsSync(path.join(botFolderPath, 'server.js')) ? 'server.js' : 'index.js';
+                        }
+                        startBotProcess('node', [entryPoint], botFolderPath, botName);
+                    }
+                });
+            } else if (fs.existsSync(path.join(botFolderPath, 'main.py')) || fs.existsSync(path.join(botFolderPath, 'bot.py'))) {
+                const scriptName = fs.existsSync(path.join(botFolderPath, 'main.py')) ? 'main.py' : 'bot.py';
+                if (fs.existsSync(path.join(botFolderPath, 'requirements.txt'))) {
+                    const pipProc = spawn('pip', ['install', '-r', 'requirements.txt'], { cwd: botFolderPath, shell: true });
+                    pipProc.on('close', () => {
+                        startBotProcess('python', [scriptName], botFolderPath, botName);
+                    });
+                } else {
+                    startBotProcess('python', [scriptName], botFolderPath, botName);
+                }
+            }
+        }
+
+        res.json({ success: true, message: `Bot [${botName}] updated and restarted successfully!` });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
