@@ -45,17 +45,18 @@ app.get('/bots', (req, res) => {
 });
 
 // 3. Universal Upload, Auto-Detect Language, Install Deps & Run Bot
-app.post('/upload', upload.single('botFile'), (req, res) => {
-    if (!req.file) return res.status(400).json({ error: 'No file uploaded!' });
+app.post('/upload', upload.any(), (req, res) => {
+    if (!req.files || req.files.length === 0) return res.status(400).json({ error: 'No file uploaded!' });
+const file = req.files[0];
 
     const botName = req.body.name || `bot_${Date.now()}`;
     const botFolderPath = path.join(botsDir, botName);
 
     try {
         // Extract zip archive
-        const zip = new AdmZip(req.file.path);
+        const zip = new AdmZip(file.path);
         zip.extractAllTo(botFolderPath, true);
-        fs.unlinkSync(req.file.path); // Clean temp zip file
+        fs.unlinkSync(file.path); // Clean temp zip file
 
         // Kill existing process if updating the same bot
         if (runningProcesses[botName]) {
