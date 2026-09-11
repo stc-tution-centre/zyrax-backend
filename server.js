@@ -23,8 +23,8 @@ const botLogs = {};
 
 // 1. Health check for UptimeRobot (24/7 uptime)
 app.get('/', (req, res) => {
-    res.send('Zyrax Unified Multi-Language Hosting Platform is Online 24/7!');
-});
+    res.sendFile(path.join(__dirname, 'index.html'));
+})
 
 // 2. Fetch all hosted/active bots with status
 app.get('/bots', (req, res) => {
