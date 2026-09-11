@@ -41,16 +41,16 @@ app.get('/bots', (req, res) => {
     }
 });
 
-// Universal Upload & Flexible Execution
+// Universal Upload - Supports ANY Language / ANY File structure
 app.post('/upload', upload.any(), (req, res) => {
-    handleBotDeployment(req, res);
+    handleUniversalDeployment(req, res);
 });
 
 app.put('/update', upload.any(), (req, res) => {
-    handleBotDeployment(req, res, true);
+    handleUniversalDeployment(req, res, true);
 });
 
-function handleBotDeployment(req, res, isUpdate = false) {
+function handleUniversalDeployment(req, res, isUpdate = false) {
     const botName = req.body.botName || req.body.name || `bot_${Date.now()}`;
     const botFolderPath = path.join(botsDir, botName);
 
@@ -72,74 +72,89 @@ function handleBotDeployment(req, res, isUpdate = false) {
             fs.unlinkSync(file.path);
         }
 
-        if (!fs.existsSync(botFolderPath)) {
-            return res.status(400).json({ error: 'Bot folder not found or extraction failed!' });
+        // Handle nested folders automatically (if zip contains a single root folder)
+        let actualWorkDir = botFolderPath;
+        const items = fs.readdirSync(botFolderPath);
+        if (items.length === 1) {
+            const subPath = path.join(botFolderPath, items[0]);
+            if (fs.statSync(subPath).isDirectory()) {
+                actualWorkDir = subPath; // Point execution to the inner folder where files actually live
+            }
         }
 
         botLogs[botName] = [];
 
-        // Check for Node.js Project
-        if (fs.existsSync(path.join(botFolderPath, 'package.json'))) {
-            const installProc = spawn('npm', ['install'], { cwd: botFolderPath, shell: true });
+        // Universal Detection & Execution
+        let command = null;
+        let args = [];
+
+        // 1. Node.js / JavaScript / TypeScript
+        if (fs.existsSync(path.join(actualWorkDir, 'package.json'))) {
+            const installProc = spawn('npm', ['install'], { cwd: actualWorkDir, shell: true });
             installProc.on('close', (code) => {
-                if (code === 0) {
-                    let entryPoint = 'index.js';
-                    try {
-                        const pkg = JSON.parse(fs.readFileSync(path.join(botFolderPath, 'package.json'), 'utf8'));
-                        if (pkg.main) entryPoint = pkg.main;
-                    } catch (e) {}
-                    if (!fs.existsSync(path.join(botFolderPath, entryPoint))) {
-                        entryPoint = fs.existsSync(path.join(botFolderPath, 'server.js')) ? 'server.js' : 'index.js';
-                    }
-                    startBotProcess('node', [entryPoint], botFolderPath, botName);
-                } else {
-                    botLogs[botName].push(`[ERR]: Dependency installation failed with code ${code}`);
+                let entryPoint = 'index.js';
+                try {
+                    const pkg = JSON.parse(fs.readFileSync(path.join(actualWorkDir, 'package.json'), 'utf8'));
+                    if (pkg.main) entryPoint = pkg.main;
+                } catch (e) {}
+                if (!fs.existsSync(path.join(actualWorkDir, entryPoint))) {
+                    if (fs.existsSync(path.join(actualWorkDir, 'server.js'))) entryPoint = 'server.js';
+                    else if (fs.existsSync(path.join(actualWorkDir, 'bot.js'))) entryPoint = 'bot.js';
                 }
+                startBotProcess('node', [entryPoint], actualWorkDir, botName);
             });
         } 
-        // Universal Python Project Detection (Supports main.py, bot.py, run_bot.py or any .py file)
+        // 2. Python (Any .py file like run_bot.py, main.py, bot.py, etc.)
         else {
             let scriptName = null;
-            const possibleNames = ['main.py', 'bot.py', 'run_bot.py', 'app.py', 'index.py'];
+            const files = fs.readdirSync(actualWorkDir);
             
-            for (let name of possibleNames) {
-                if (fs.existsSync(path.join(botFolderPath, name))) {
-                    scriptName = name;
+            // Priority list
+            const priorities = ['run_bot.py', 'main.py', 'bot.py', 'app.py', 'index.py'];
+            for (let p of priorities) {
+                if (files.includes(p)) {
+                    scriptName = p;
                     break;
                 }
             }
-
-            // If specific names not found, pick the first .py file available in the folder
+            
+            // If not in priority, pick any .py file available
             if (!scriptName) {
-                const files = fs.readdirSync(botFolderPath);
                 const pyFile = files.find(f => f.endsWith('.py'));
                 if (pyFile) scriptName = pyFile;
             }
 
             if (scriptName) {
-                const reqPath = path.join(botFolderPath, 'requirements.txt');
-                const pyprojectPath = path.join(botFolderPath, 'pyproject.toml');
-
-                if (fs.existsSync(reqPath)) {
-                    const pipProc = spawn('pip', ['install', '-r', 'requirements.txt'], { cwd: botFolderPath, shell: true });
+                if (fs.existsSync(path.join(actualWorkDir, 'requirements.txt'))) {
+                    const pipProc = spawn('pip', ['install', '-r', 'requirements.txt'], { cwd: actualWorkDir, shell: true });
                     pipProc.on('close', () => {
-                        startBotProcess('python', [scriptName], botFolderPath, botName);
-                    });
-                } else if (fs.existsSync(pyprojectPath) && fs.existsSync(path.join(botFolderPath, 'uv.lock'))) {
-                    // Support for uv/pyproject projects if present
-                    const uvProc = spawn('pip', ['install', '.'], { cwd: botFolderPath, shell: true });
-                    uvProc.on('close', () => {
-                        startBotProcess('python', [scriptName], botFolderPath, botName);
+                        startBotProcess('python', [scriptName], actualWorkDir, botName);
                     });
                 } else {
-                    startBotProcess('python', [scriptName], botFolderPath, botName);
+                    startBotProcess('python', [scriptName], actualWorkDir, botName);
                 }
-            } else {
-                return res.status(400).json({ error: 'Unsupported structure! Include package.json or a Python script (.py like run_bot.py, main.py).' });
+            } 
+            // 3. Java (Main.java or Jar)
+            else if (files.some(f => f.endsWith('.jar'))) {
+                const jarFile = files.find(f => f.endsWith('.jar'));
+                startBotProcess('java', ['-jar', jarFile], actualWorkDir, botName);
+            } 
+            // 4. Absolute Fallback: Run whatever script or executable is found
+            else {
+                const anyScript = files.find(f => f.endsWith('.js') || f.endsWith('.py') || f.endsWith('.sh') || f.endsWith('.rb') || f.endsWith('.go'));
+                if (anyScript) {
+                    const ext = path.extname(anyScript);
+                    if (ext === '.js') startBotProcess('node', [anyScript], actualWorkDir, botName);
+                    else if (ext === '.py') startBotProcess('python', [anyScript], actualWorkDir, botName);
+                    else if (ext === '.go') startBotProcess('go', ['run', anyScript], actualWorkDir, botName);
+                    else startBotProcess('node', [anyScript], actualWorkDir, botName);
+                } else {
+                    return res.status(400).json({ error: 'No executable script or recognized structure found in zip!' });
+                }
             }
         }
 
-        const msg = isUpdate ? `Bot [${botName}] updated and restarted successfully!` : `Bot [${botName}] uploaded and deploying successfully!`;
+        const msg = isUpdate ? `Bot [${botName}] updated successfully!` : `Bot [${botName}] uploaded and running!`;
         res.json({ success: true, message: msg });
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -209,10 +224,11 @@ app.delete('/delete/:name', (req, res) => {
 });
 
 app.get('/logs/:name', (req, res) => {
-    const { name } = req.params;
+    const { name`req.params;
     res.json({ success: true, logs: botLogs[name] || [] });
 });
 
 app.listen(PORT, () => {
     console.log(`Zyrax Unified Backend running on port ${PORT}`);
 });
+
