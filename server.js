@@ -120,13 +120,27 @@ function handleUniversalDeployment(req, res, isUpdate = false) {
                 }
 
                 try {
-                    console.log(`Installing dependencies synchronously for ${botName}...`);
-                    execSync('python3 -m pip install --user -r requirements.txt', { cwd: actualWorkDir, stdio: 'inherit' });
-                } catch (pipErr) {
-                    console.error(`Pip install warning/error: ${pipErr.message}`);
+                    console.log(`Creating Virtual Environment for ${botName}...`);
+                    execSync('python3 -m venv venv', { cwd: actualWorkDir, stdio: 'inherit' });
+
+                    console.log(`Installing dependencies inside venv for ${botName}...`);
+                    // Path to pip inside virtual environment
+                    const pipPath = process.platform === 'win32' 
+                        ? path.join(actualWorkDir, 'venv', 'Scripts', 'pip')
+                        : path.join(actualWorkDir, 'venv', 'bin', 'pip');
+
+                    execSync(`"${pipPath}" install --upgrade pip`, { cwd: actualWorkDir, stdio: 'inherit' });
+                    execSync(`"${pipPath}" install -r requirements.txt`, { cwd: actualWorkDir, stdio: 'inherit' });
+                } catch (venvErr) {
+                    console.error(`Venv error: ${venvErr.message}`);
                 }
 
-                startBotProcess('python3', [scriptName], actualWorkDir, botName);
+                // Path to python inside virtual environment
+                const pythonPath = process.platform === 'win32'
+                    ? path.join(actualWorkDir, 'venv', 'Scripts', 'python')
+                    : path.join(actualWorkDir, 'venv', 'bin', 'python');
+
+                startBotProcess(pythonPath, [scriptName], actualWorkDir, botName);
             } else if (files.some(f => f.endsWith('.jar'))) {
                 const jarFile = files.find(f => f.endsWith('.jar'));
                 startBotProcess('java', ['-jar', jarFile], actualWorkDir, botName);
