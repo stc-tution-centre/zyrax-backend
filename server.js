@@ -1,7 +1,7 @@
 const express = require('express');
 const multer = require('multer');
 const AdmZip = require('adm-zip');
-const { spawn, exec } = require('child_process');
+const { spawn, execSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 const cors = require('cors');
@@ -19,16 +19,6 @@ if (!fs.existsSync(botsDir)) fs.mkdirSync(botsDir);
 
 const runningProcesses = {}; 
 const botLogs = {};
-
-// Pre-install common bot libraries globally on server startup so bots never face ModuleNotFoundError
-console.log("Installing default Python bot dependencies...");
-exec('python3 -m pip install --user discord.py PyNaCl requests yt-dlp', (err, stdout, stderr) => {
-    if (err) {
-        console.error(`Pre-install warning: ${stderr}`);
-    } else {
-        console.log("Default Python dependencies ready!");
-    }
-});
 
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
@@ -94,19 +84,20 @@ function handleUniversalDeployment(req, res, isUpdate = false) {
         const files = fs.readdirSync(actualWorkDir);
 
         if (fs.existsSync(path.join(actualWorkDir, 'package.json'))) {
-            const installProc = spawn('npm', ['install'], { cwd: actualWorkDir, shell: true });
-            installProc.on('close', (code) => {
-                let entryPoint = 'index.js';
-                try {
-                    const pkg = JSON.parse(fs.readFileSync(path.join(actualWorkDir, 'package.json'), 'utf8'));
-                    if (pkg.main) entryPoint = pkg.main;
-                } catch (e) {}
-                if (!fs.existsSync(path.join(actualWorkDir, entryPoint))) {
-                    if (fs.existsSync(path.join(actualWorkDir, 'server.js'))) entryPoint = 'server.js';
-                    else if (fs.existsSync(path.join(actualWorkDir, 'bot.js'))) entryPoint = 'bot.js';
-                }
-                startBotProcess('node', [entryPoint], actualWorkDir, botName);
-            });
+            try {
+                execSync('npm install', { cwd: actualWorkDir, stdio: 'inherit' });
+            } catch (e) {}
+
+            let entryPoint = 'index.js';
+            try {
+                const pkg = JSON.parse(fs.readFileSync(path.join(actualWorkDir, 'package.json'), 'utf8'));
+                if (pkg.main) entryPoint = pkg.main;
+            } catch (e) {}
+            if (!fs.existsSync(path.join(actualWorkDir, entryPoint))) {
+                if (fs.existsSync(path.join(actualWorkDir, 'server.js'))) entryPoint = 'server.js';
+                else if (fs.existsSync(path.join(actualWorkDir, 'bot.js'))) entryPoint = 'bot.js';
+            }
+            startBotProcess('node', [entryPoint], actualWorkDir, botName);
         } else {
             let scriptName = null;
             const priorities = ['run_bot.py', 'main.py', 'bot.py', 'app.py', 'index.py'];
@@ -124,13 +115,18 @@ function handleUniversalDeployment(req, res, isUpdate = false) {
 
             if (scriptName) {
                 const reqPath = path.join(actualWorkDir, 'requirements.txt');
-                if (fs.existsSync(reqPath)) {
-                    exec('python3 -m pip install --user -r requirements.txt', { cwd: actualWorkDir }, () => {
-                        startBotProcess('python3', [scriptName], actualWorkDir, botName);
-                    });
-                } else {
-                    startBotProcess('python3', [scriptName], actualWorkDir, botName);
+                if (!fs.existsSync(reqPath)) {
+                    fs.writeFileSync(reqPath, 'discord.py\nPyNaCl\nrequests\nyt-dlp\n');
                 }
+
+                try {
+                    console.log(`Installing dependencies synchronously for ${botName}...`);
+                    execSync('python3 -m pip install --user -r requirements.txt', { cwd: actualWorkDir, stdio: 'inherit' });
+                } catch (pipErr) {
+                    console.error(`Pip install warning/error: ${pipErr.message}`);
+                }
+
+                startBotProcess('python3', [scriptName], actualWorkDir, botName);
             } else if (files.some(f => f.endsWith('.jar'))) {
                 const jarFile = files.find(f => f.endsWith('.jar'));
                 startBotProcess('java', ['-jar', jarFile], actualWorkDir, botName);
