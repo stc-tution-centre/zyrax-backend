@@ -49,7 +49,7 @@ app.post('/upload', upload.any(), (req, res) => {
     if (!req.files || req.files.length === 0) return res.status(400).json({ error: 'No file uploaded!' });
 const file = req.files[0];
 
-    const botName = req.body.name || `bot_${Date.now()}`;
+    const botName = req.body.botName || req.body.name || `bot_${Date.now()}`;
     const botFolderPath = path.join(botsDir, botName);
 
     try {
