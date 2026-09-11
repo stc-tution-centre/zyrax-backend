@@ -78,15 +78,14 @@ function handleUniversalDeployment(req, res, isUpdate = false) {
         if (items.length === 1) {
             const subPath = path.join(botFolderPath, items[0]);
             if (fs.statSync(subPath).isDirectory()) {
-                actualWorkDir = subPath; // Point execution to the inner folder where files actually live
+                actualWorkDir = subPath;
             }
         }
 
         botLogs[botName] = [];
 
         // Universal Detection & Execution
-        let command = null;
-        let args = [];
+        const files = fs.readdirSync(actualWorkDir);
 
         // 1. Node.js / JavaScript / TypeScript
         if (fs.existsSync(path.join(actualWorkDir, 'package.json'))) {
@@ -107,9 +106,6 @@ function handleUniversalDeployment(req, res, isUpdate = false) {
         // 2. Python (Any .py file like run_bot.py, main.py, bot.py, etc.)
         else {
             let scriptName = null;
-            const files = fs.readdirSync(actualWorkDir);
-            
-            // Priority list
             const priorities = ['run_bot.py', 'main.py', 'bot.py', 'app.py', 'index.py'];
             for (let p of priorities) {
                 if (files.includes(p)) {
@@ -118,7 +114,6 @@ function handleUniversalDeployment(req, res, isUpdate = false) {
                 }
             }
             
-            // If not in priority, pick any .py file available
             if (!scriptName) {
                 const pyFile = files.find(f => f.endsWith('.py'));
                 if (pyFile) scriptName = pyFile;
@@ -134,12 +129,12 @@ function handleUniversalDeployment(req, res, isUpdate = false) {
                     startBotProcess('python', [scriptName], actualWorkDir, botName);
                 }
             } 
-            // 3. Java (Main.java or Jar)
+            // 3. Java (.jar)
             else if (files.some(f => f.endsWith('.jar'))) {
                 const jarFile = files.find(f => f.endsWith('.jar'));
                 startBotProcess('java', ['-jar', jarFile], actualWorkDir, botName);
             } 
-            // 4. Absolute Fallback: Run whatever script or executable is found
+            // 4. Fallback for other scripts
             else {
                 const anyScript = files.find(f => f.endsWith('.js') || f.endsWith('.py') || f.endsWith('.sh') || f.endsWith('.rb') || f.endsWith('.go'));
                 if (anyScript) {
@@ -224,11 +219,10 @@ app.delete('/delete/:name', (req, res) => {
 });
 
 app.get('/logs/:name', (req, res) => {
-    const { name`req.params;
+    const { name } = req.params;
     res.json({ success: true, logs: botLogs[name] || [] });
 });
 
 app.listen(PORT, () => {
     console.log(`Zyrax Unified Backend running on port ${PORT}`);
 });
-
