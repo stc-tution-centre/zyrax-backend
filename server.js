@@ -1,7 +1,7 @@
 const express = require('express');
 const multer = require('multer');
 const AdmZip = require('adm-zip');
-const { spawn } = require('child_process');
+const { spawn, exec } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 const cors = require('cors');
@@ -19,6 +19,16 @@ if (!fs.existsSync(botsDir)) fs.mkdirSync(botsDir);
 
 const runningProcesses = {}; 
 const botLogs = {};
+
+// Pre-install common bot libraries globally on server startup so bots never face ModuleNotFoundError
+console.log("Installing default Python bot dependencies...");
+exec('python3 -m pip install --user discord.py PyNaCl requests yt-dlp', (err, stdout, stderr) => {
+    if (err) {
+        console.error(`Pre-install warning: ${stderr}`);
+    } else {
+        console.log("Default Python dependencies ready!");
+    }
+});
 
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
@@ -114,14 +124,13 @@ function handleUniversalDeployment(req, res, isUpdate = false) {
 
             if (scriptName) {
                 const reqPath = path.join(actualWorkDir, 'requirements.txt');
-                if (!fs.existsSync(reqPath)) {
-                    fs.writeFileSync(reqPath, 'discord.py\nPyNaCl\nrequests\n');
-                }
-
-                const pipProc = spawn('python3', ['-m', 'pip', 'install', '-r', 'requirements.txt'], { cwd: actualWorkDir, shell: true });
-                pipProc.on('close', (code) => {
+                if (fs.existsSync(reqPath)) {
+                    exec('python3 -m pip install --user -r requirements.txt', { cwd: actualWorkDir }, () => {
+                        startBotProcess('python3', [scriptName], actualWorkDir, botName);
+                    });
+                } else {
                     startBotProcess('python3', [scriptName], actualWorkDir, botName);
-                });
+                }
             } else if (files.some(f => f.endsWith('.jar'))) {
                 const jarFile = files.find(f => f.endsWith('.jar'));
                 startBotProcess('java', ['-jar', jarFile], actualWorkDir, botName);
