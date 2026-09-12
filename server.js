@@ -51,6 +51,7 @@ app.put('/update', upload.any(), (req, res) => {
 
 function handleUniversalDeployment(req, res, isUpdate = false) {
     const botName = req.body.botName || req.body.name || `bot_${Date.now()}`;
+    const botToken = req.body.token; // Frontend se aane wala token
     const botFolderPath = path.join(botsDir, botName);
 
     try {
@@ -78,6 +79,13 @@ function handleUniversalDeployment(req, res, isUpdate = false) {
             if (fs.statSync(subPath).isDirectory()) {
                 actualWorkDir = subPath;
             }
+        }
+
+        // Agar frontend se token mila hai, toh usko `.env` file me likh do
+        if (botToken) {
+            const envPath = path.join(actualWorkDir, '.env');
+            fs.writeFileSync(envPath, `DISCORD_TOKEN=${botToken}\n`);
+            console.log(`[${botName}] Created .env file with provided token.`);
         }
 
         botLogs[botName] = [];
@@ -116,7 +124,13 @@ function handleUniversalDeployment(req, res, isUpdate = false) {
             if (scriptName) {
                 const reqPath = path.join(actualWorkDir, 'requirements.txt');
                 if (!fs.existsSync(reqPath)) {
-                    fs.writeFileSync(reqPath, 'discord.py\nPyNaCl\nrequests\nyt-dlp\nPillow\n');
+                    fs.writeFileSync(reqPath, 'discord.py\nPyNaCl\nrequests\nyt-dlp\nPillow\npython-dotenv\n');
+                } else {
+                    // Agar requirements.txt pehle se hai toh ensure karein ki python-dotenv aur Pillow ho
+                    let reqContent = fs.readFileSync(reqPath, 'utf8');
+                    if (!reqContent.includes('Pillow')) reqContent += '\nPillow';
+                    if (!reqContent.includes('python-dotenv')) reqContent += '\npython-dotenv';
+                    fs.writeFileSync(reqPath, reqContent);
                 }
 
                 try {
@@ -167,7 +181,10 @@ function startBotProcess(command, args, cwd, botName) {
         runningProcesses[botName].kill();
     }
 
-    const botProcess = spawn(command, args, { cwd, shell: true });
+    // System ke saare environment variables ke sath bot token bhi pass kar do
+    const env = Object.assign({}, process.env);
+
+    const botProcess = spawn(command, args, { cwd, shell: true, env });
     runningProcesses[botName] = botProcess;
 
     botProcess.stdout.on('data', (data) => {
