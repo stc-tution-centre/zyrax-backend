@@ -88,6 +88,23 @@ function handleUniversalDeployment(req, res, isUpdate = false) {
         }
 
         botLogs[botName] = [];
+
+        const msg = isUpdate ? `Bot [${botName}] update started!` : `Bot [${botName}] deployment started!`;
+        res.json({ success: true, message: msg });
+
+        setImmediate(() => {
+            runBackgroundDeployment(actualWorkDir, botName, botToken);
+        });
+
+    } catch (err) {
+        if (!res.headersSent) {
+            res.status(500).json({ error: err.message });
+        }
+    }
+}
+
+function runBackgroundDeployment(actualWorkDir, botName, botToken) {
+    try {
         const files = fs.readdirSync(actualWorkDir);
 
         if (fs.existsSync(path.join(actualWorkDir, 'package.json'))) {
@@ -161,16 +178,11 @@ function handleUniversalDeployment(req, res, isUpdate = false) {
                     if (ext === '.js') startBotProcess('node', [anyScript], actualWorkDir, botName, botToken);
                     else if (ext === '.py') startBotProcess('python3', [anyScript], actualWorkDir, botName, botToken);
                     else startBotProcess('node', [anyScript], actualWorkDir, botName, botToken);
-                } else {
-                    return res.status(400).json({ error: 'No executable script found in zip!' });
                 }
             }
         }
-
-        const msg = isUpdate ? `Bot [${botName}] updated successfully!` : `Bot [${botName}] uploaded and running!`;
-        res.json({ success: true, message: msg });
-    } catch (err) {
-        res.status(500).json({ error: err.message });
+    } catch (bgErr) {
+        console.error(`Background deployment error for [${botName}]: ${bgErr.message}`);
     }
 }
 
@@ -179,7 +191,6 @@ function startBotProcess(command, args, cwd, botName, botToken) {
         runningProcesses[botName].kill();
     }
 
-    // Token ko seedha environment variable me pass kar rahe hain taaki bot bina .env ke bhi utha le
     const env = Object.assign({}, process.env);
     if (botToken) {
         env.DISCORD_TOKEN = botToken;
@@ -250,3 +261,4 @@ app.get('/logs/:name', (req, res) => {
 app.listen(PORT, () => {
     console.log(`Zyrax Unified Backend running on port ${PORT}`);
 });
+
