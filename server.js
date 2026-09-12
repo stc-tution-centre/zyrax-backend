@@ -116,7 +116,7 @@ function handleUniversalDeployment(req, res, isUpdate = false) {
             if (scriptName) {
                 const reqPath = path.join(actualWorkDir, 'requirements.txt');
                 if (!fs.existsSync(reqPath)) {
-                    fs.writeFileSync(reqPath, 'discord.py\nPyNaCl\nrequests\nyt-dlp\n');
+                    fs.writeFileSync(reqPath, 'discord.py\nPyNaCl\nrequests\nyt-dlp\nPillow\n');
                 }
 
                 try {
@@ -124,7 +124,6 @@ function handleUniversalDeployment(req, res, isUpdate = false) {
                     execSync('python3 -m venv venv', { cwd: actualWorkDir, stdio: 'inherit' });
 
                     console.log(`Installing dependencies inside venv for ${botName}...`);
-                    // Path to pip inside virtual environment
                     const pipPath = process.platform === 'win32' 
                         ? path.join(actualWorkDir, 'venv', 'Scripts', 'pip')
                         : path.join(actualWorkDir, 'venv', 'bin', 'pip');
@@ -135,7 +134,6 @@ function handleUniversalDeployment(req, res, isUpdate = false) {
                     console.error(`Venv error: ${venvErr.message}`);
                 }
 
-                // Path to python inside virtual environment
                 const pythonPath = process.platform === 'win32'
                     ? path.join(actualWorkDir, 'venv', 'Scripts', 'python')
                     : path.join(actualWorkDir, 'venv', 'bin', 'python');
@@ -234,3 +232,4 @@ app.get('/logs/:name', (req, res) => {
 app.listen(PORT, () => {
     console.log(`Zyrax Unified Backend running on port ${PORT}`);
 });
+
