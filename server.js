@@ -51,7 +51,7 @@ app.put('/update', upload.any(), (req, res) => {
 
 function handleUniversalDeployment(req, res, isUpdate = false) {
     const botName = req.body.botName || req.body.name || `bot_${Date.now()}`;
-    const botToken = req.body.token; // Frontend se aane wala token
+    const botToken = req.body.token;
     const botFolderPath = path.join(botsDir, botName);
 
     try {
@@ -81,7 +81,6 @@ function handleUniversalDeployment(req, res, isUpdate = false) {
             }
         }
 
-        // Agar frontend se token mila hai, toh usko `.env` file me likh do
         if (botToken) {
             const envPath = path.join(actualWorkDir, '.env');
             fs.writeFileSync(envPath, `DISCORD_TOKEN=${botToken}\n`);
@@ -105,7 +104,7 @@ function handleUniversalDeployment(req, res, isUpdate = false) {
                 if (fs.existsSync(path.join(actualWorkDir, 'server.js'))) entryPoint = 'server.js';
                 else if (fs.existsSync(path.join(actualWorkDir, 'bot.js'))) entryPoint = 'bot.js';
             }
-            startBotProcess('node', [entryPoint], actualWorkDir, botName);
+            startBotProcess('node', [entryPoint], actualWorkDir, botName, botToken);
         } else {
             let scriptName = null;
             const priorities = ['run_bot.py', 'main.py', 'bot.py', 'app.py', 'index.py'];
@@ -126,7 +125,6 @@ function handleUniversalDeployment(req, res, isUpdate = false) {
                 if (!fs.existsSync(reqPath)) {
                     fs.writeFileSync(reqPath, 'discord.py\nPyNaCl\nrequests\nyt-dlp\nPillow\npython-dotenv\n');
                 } else {
-                    // Agar requirements.txt pehle se hai toh ensure karein ki python-dotenv aur Pillow ho
                     let reqContent = fs.readFileSync(reqPath, 'utf8');
                     if (!reqContent.includes('Pillow')) reqContent += '\nPillow';
                     if (!reqContent.includes('python-dotenv')) reqContent += '\npython-dotenv';
@@ -152,17 +150,17 @@ function handleUniversalDeployment(req, res, isUpdate = false) {
                     ? path.join(actualWorkDir, 'venv', 'Scripts', 'python')
                     : path.join(actualWorkDir, 'venv', 'bin', 'python');
 
-                startBotProcess(pythonPath, [scriptName], actualWorkDir, botName);
+                startBotProcess(pythonPath, [scriptName], actualWorkDir, botName, botToken);
             } else if (files.some(f => f.endsWith('.jar'))) {
                 const jarFile = files.find(f => f.endsWith('.jar'));
-                startBotProcess('java', ['-jar', jarFile], actualWorkDir, botName);
+                startBotProcess('java', ['-jar', jarFile], actualWorkDir, botName, botToken);
             } else {
                 const anyScript = files.find(f => f.endsWith('.js') || f.endsWith('.py') || f.endsWith('.sh') || f.endsWith('.rb') || f.endsWith('.go'));
                 if (anyScript) {
                     const ext = path.extname(anyScript);
-                    if (ext === '.js') startBotProcess('node', [anyScript], actualWorkDir, botName);
-                    else if (ext === '.py') startBotProcess('python3', [anyScript], actualWorkDir, botName);
-                    else startBotProcess('node', [anyScript], actualWorkDir, botName);
+                    if (ext === '.js') startBotProcess('node', [anyScript], actualWorkDir, botName, botToken);
+                    else if (ext === '.py') startBotProcess('python3', [anyScript], actualWorkDir, botName, botToken);
+                    else startBotProcess('node', [anyScript], actualWorkDir, botName, botToken);
                 } else {
                     return res.status(400).json({ error: 'No executable script found in zip!' });
                 }
@@ -176,13 +174,16 @@ function handleUniversalDeployment(req, res, isUpdate = false) {
     }
 }
 
-function startBotProcess(command, args, cwd, botName) {
+function startBotProcess(command, args, cwd, botName, botToken) {
     if (runningProcesses[botName]) {
         runningProcesses[botName].kill();
     }
 
-    // System ke saare environment variables ke sath bot token bhi pass kar do
+    // Token ko seedha environment variable me pass kar rahe hain taaki bot bina .env ke bhi utha le
     const env = Object.assign({}, process.env);
+    if (botToken) {
+        env.DISCORD_TOKEN = botToken;
+    }
 
     const botProcess = spawn(command, args, { cwd, shell: true, env });
     runningProcesses[botName] = botProcess;
@@ -249,4 +250,3 @@ app.get('/logs/:name', (req, res) => {
 app.listen(PORT, () => {
     console.log(`Zyrax Unified Backend running on port ${PORT}`);
 });
-
