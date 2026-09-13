@@ -24,15 +24,21 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 
+// User-specific bots fetch karne ke liye (?user=username)
 app.get('/bots', (req, res) => {
     try {
-        if (!fs.existsSync(botsDir)) {
+        const username = req.query.user || 'default';
+        const userFolder = path.join(botsDir, username);
+
+        if (!fs.existsSync(userFolder)) {
             return res.json({ success: true, bots: [] });
         }
-        const bots = fs.readdirSync(botsDir).map(name => {
+
+        const bots = fs.readdirSync(userFolder).map(name => {
+            const processKey = `${username}_${name}`;
             return {
                 name,
-                status: runningProcesses[name] ? 'Running' : 'Stopped'
+                status: runningProcesses[processKey] ? 'Running' : 'Stopped'
             };
         });
         res.json({ success: true, bots });
@@ -50,14 +56,20 @@ app.put('/update', upload.any(), (req, res) => {
 });
 
 function handleUniversalDeployment(req, res, isUpdate = false) {
+    const username = req.body.username || req.body.user || 'default';
     const botName = req.body.botName || req.body.name || `bot_${Date.now()}`;
     const botToken = req.body.token;
-    const botFolderPath = path.join(botsDir, botName);
+
+    const userFolderPath = path.join(botsDir, username);
+    if (!fs.existsSync(userFolderPath)) fs.mkdirSync(userFolderPath, { recursive: true });
+
+    const botFolderPath = path.join(userFolderPath, botName);
+    const processKey = `${username}_${botName}`;
 
     try {
-        if (isUpdate && runningProcesses[botName]) {
-            runningProcesses[botName].kill();
-            delete runningProcesses[botName];
+        if (isUpdate && runningProcesses[processKey]) {
+            runningProcesses[processKey].kill();
+            delete runningProcesses[processKey];
         }
 
         if (req.files && req.files.length > 0) {
@@ -84,16 +96,16 @@ function handleUniversalDeployment(req, res, isUpdate = false) {
         if (botToken) {
             const envPath = path.join(actualWorkDir, '.env');
             fs.writeFileSync(envPath, `DISCORD_TOKEN=${botToken}\n`);
-            console.log(`[${botName}] Created .env file with provided token.`);
+            console.log(`[${username}/${botName}] Created .env file with provided token.`);
         }
 
-        botLogs[botName] = [];
+        botLogs[processKey] = [];
 
         const msg = isUpdate ? `Bot [${botName}] update started!` : `Bot [${botName}] deployment started!`;
         res.json({ success: true, message: msg });
 
         setImmediate(() => {
-            runBackgroundDeployment(actualWorkDir, botName, botToken);
+            runBackgroundDeployment(actualWorkDir, botName, botToken, username, processKey);
         });
 
     } catch (err) {
@@ -103,7 +115,7 @@ function handleUniversalDeployment(req, res, isUpdate = false) {
     }
 }
 
-function runBackgroundDeployment(actualWorkDir, botName, botToken) {
+function runBackgroundDeployment(actualWorkDir, botName, botToken, username, processKey) {
     try {
         const files = fs.readdirSync(actualWorkDir);
 
@@ -121,7 +133,7 @@ function runBackgroundDeployment(actualWorkDir, botName, botToken) {
                 if (fs.existsSync(path.join(actualWorkDir, 'server.js'))) entryPoint = 'server.js';
                 else if (fs.existsSync(path.join(actualWorkDir, 'bot.js'))) entryPoint = 'bot.js';
             }
-            startBotProcess('node', [entryPoint], actualWorkDir, botName, botToken);
+            startBotProcess('node', [entryPoint], actualWorkDir, botName, botToken, processKey);
         } else {
             let scriptName = null;
             const priorities = ['run_bot.py', 'main.py', 'bot.py', 'app.py', 'index.py'];
@@ -149,10 +161,10 @@ function runBackgroundDeployment(actualWorkDir, botName, botToken) {
                 }
 
                 try {
-                    console.log(`Creating Virtual Environment for ${botName}...`);
+                    console.log(`Creating Virtual Environment for ${username}/${botName}...`);
                     execSync('python3 -m venv venv', { cwd: actualWorkDir, stdio: 'inherit' });
 
-                    console.log(`Installing dependencies inside venv for ${botName}...`);
+                    console.log(`Installing dependencies inside venv for ${username}/${botName}...`);
                     const pipPath = process.platform === 'win32' 
                         ? path.join(actualWorkDir, 'venv', 'Scripts', 'pip')
                         : path.join(actualWorkDir, 'venv', 'bin', 'pip');
@@ -167,28 +179,28 @@ function runBackgroundDeployment(actualWorkDir, botName, botToken) {
                     ? path.join(actualWorkDir, 'venv', 'Scripts', 'python')
                     : path.join(actualWorkDir, 'venv', 'bin', 'python');
 
-                startBotProcess(pythonPath, [scriptName], actualWorkDir, botName, botToken);
+                startBotProcess(pythonPath, [scriptName], actualWorkDir, botName, botToken, processKey);
             } else if (files.some(f => f.endsWith('.jar'))) {
                 const jarFile = files.find(f => f.endsWith('.jar'));
-                startBotProcess('java', ['-jar', jarFile], actualWorkDir, botName, botToken);
+                startBotProcess('java', ['-jar', jarFile], actualWorkDir, botName, botToken, processKey);
             } else {
                 const anyScript = files.find(f => f.endsWith('.js') || f.endsWith('.py') || f.endsWith('.sh') || f.endsWith('.rb') || f.endsWith('.go'));
                 if (anyScript) {
                     const ext = path.extname(anyScript);
-                    if (ext === '.js') startBotProcess('node', [anyScript], actualWorkDir, botName, botToken);
-                    else if (ext === '.py') startBotProcess('python3', [anyScript], actualWorkDir, botName, botToken);
-                    else startBotProcess('node', [anyScript], actualWorkDir, botName, botToken);
+                    if (ext === '.js') startBotProcess('node', [anyScript], actualWorkDir, botName, botToken, processKey);
+                    else if (ext === '.py') startBotProcess('python3', [anyScript], actualWorkDir, botName, botToken, processKey);
+                    else startBotProcess('node', [anyScript], actualWorkDir, botName, botToken, processKey);
                 }
             }
         }
     } catch (bgErr) {
-        console.error(`Background deployment error for [${botName}]: ${bgErr.message}`);
+        console.error(`Background deployment error for [${username}/${botName}]: ${bgErr.message}`);
     }
 }
 
-function startBotProcess(command, args, cwd, botName, botToken) {
-    if (runningProcesses[botName]) {
-        runningProcesses[botName].kill();
+function startBotProcess(command, args, cwd, botName, botToken, processKey) {
+    if (runningProcesses[processKey]) {
+        runningProcesses[processKey].kill();
     }
 
     const env = Object.assign({}, process.env);
@@ -197,65 +209,68 @@ function startBotProcess(command, args, cwd, botName, botToken) {
     }
 
     const botProcess = spawn(command, args, { cwd, shell: true, env });
-    runningProcesses[botName] = botProcess;
+    runningProcesses[processKey] = botProcess;
 
     botProcess.stdout.on('data', (data) => {
         const logMsg = `[OUT]: ${data.toString()}`;
-        console.log(`[${botName}] ${logMsg}`);
-        if (!botLogs[botName]) botLogs[botName] = [];
-        botLogs[botName].push(logMsg);
-        if (botLogs[botName].length > 100) botLogs[botName].shift();
+        console.log(`[${processKey}] ${logMsg}`);
+        if (!botLogs[processKey]) botLogs[processKey] = [];
+        botLogs[processKey].push(logMsg);
+        if (botLogs[processKey].length > 100) botLogs[processKey].shift();
     });
 
     botProcess.stderr.on('data', (data) => {
         const logMsg = `[ERR]: ${data.toString()}`;
-        console.error(`[${botName}] ${logMsg}`);
-        if (!botLogs[botName]) botLogs[botName] = [];
-        botLogs[botName].push(logMsg);
-        if (botLogs[botName].length > 100) botLogs[botName].shift();
+        console.error(`[${processKey}] ${logMsg}`);
+        if (!botLogs[processKey]) botLogs[processKey] = [];
+        botLogs[processKey].push(logMsg);
+        if (botLogs[processKey].length > 100) botLogs[processKey].shift();
     });
 
     botProcess.on('close', (code) => {
         const exitMsg = `Process exited with code ${code}`;
-        console.log(`[${botName}] ${exitMsg}`);
-        if (!botLogs[botName]) botLogs[botName] = [];
-        botLogs[botName].push(exitMsg);
-        delete runningProcesses[botName];
+        console.log(`[${processKey}] ${exitMsg}`);
+        if (!botLogs[processKey]) botLogs[processKey] = [];
+        botLogs[processKey].push(exitMsg);
+        delete runningProcesses[processKey];
     });
 }
 
-app.post('/stop/:name', (req, res) => {
-    const { name } = req.params;
-    if (runningProcesses[name]) {
-        runningProcesses[name].kill();
-        delete runningProcesses[name];
+app.post('/stop/:username/:name', (req, res) => {
+    const { username, name } = req.params;
+    const processKey = `${username}_${name}`;
+    if (runningProcesses[processKey]) {
+        runningProcesses[processKey].kill();
+        delete runningProcesses[processKey];
         res.json({ success: true, message: `Bot ${name} stopped successfully.` });
     } else {
         res.status(404).json({ error: 'Bot is not currently running.' });
     }
 });
 
-app.delete('/delete/:name', (req, res) => {
-    const { name } = req.params;
-    const botFolderPath = path.join(botsDir, name);
+app.delete('/delete/:username/:name', (req, res) => {
+    const { username, name } = req.params;
+    const processKey = `${username}_${name}`;
+    const botFolderPath = path.join(botsDir, username, name);
     
-    if (runningProcesses[name]) {
-        runningProcesses[name].kill();
-        delete runningProcesses[name];
+    if (runningProcesses[processKey]) {
+        runningProcesses[processKey].kill();
+        delete runningProcesses[processKey];
     }
     
     if (fs.existsSync(botFolderPath)) {
         fs.rmSync(botFolderPath, { recursive: true, force: true });
-        delete botLogs[name];
+        delete botLogs[processKey];
         res.json({ success: true, message: `Bot ${name} deleted successfully.` });
     } else {
         res.status(404).json({ error: 'Bot folder not found.' });
     }
 });
 
-app.get('/logs/:name', (req, res) => {
-    const { name } = req.params;
-    res.json({ success: true, logs: botLogs[name] || [] });
+app.get('/logs/:username/:name', (req, res) => {
+    const { username, name } = req.params;
+    const processKey = `${username}_${name}`;
+    res.json({ success: true, logs: botLogs[processKey] || [] });
 });
 
 app.listen(PORT, () => {
