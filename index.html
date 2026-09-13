@@ -206,7 +206,7 @@
 <body>
 
     <div class="navbar">
-        <div class="brand">𝐙𝐘𝐑𝐀𝐗™ | HOST SERVICE</div>
+        <div class="brand">ᗯɪɴᴅꜱ™ | HOST SERVICE</div>
         <div class="user-info" id="user-display" onclick="switchUser()">👤 Guest</div>
     </div>
 
@@ -225,7 +225,7 @@
 
     <div id="loading-screen" class="overlay" style="background: #ffffff;">
         <div class="spinner"></div>
-        <p id="loading-text" style="color: #374151; font-weight: bold; font-size: 16px;">Loading 𝐙𝐘𝐑𝐀𝐗™...</p>
+        <p id="loading-text" style="color: #374151; font-weight: bold; font-size: 16px;">Loading ᗯɪɴᴅꜱ™...</p>
     </div>
 
     <div id="username-modal" class="overlay" style="display: none;">
@@ -281,7 +281,7 @@
         const botTokenRegex = /^[A-Za-z0-9_-]{23,28}\.[A-Za-z0-9_-]{6,7}\.[A-Za-z0-9_-]{27,38}$/;
 
         window.onload = function() {
-            showLoading("Loading 𝐙𝐘𝐑𝐀𝐗™...", 1200, () => {
+            showLoading("Loading ᗯɪɴᴅꜱ™...", 1200, () => {
                 document.getElementById('username-modal').style.display = 'flex';
             });
         };
@@ -306,7 +306,7 @@
             }
 
             const cleanName = name.toLowerCase();
-            let usersData = localStorage.getItem('zyrax_user_accounts');
+            let usersData = localStorage.getItem('winds_user_accounts');
             let users = usersData ? JSON.parse(usersData) : {};
 
             if (users[cleanName]) {
@@ -316,7 +316,7 @@
                 }
             } else {
                 users[cleanName] = pass;
-                localStorage.setItem('zyrax_user_accounts', JSON.stringify(users));
+                localStorage.setItem('winds_user_accounts', JSON.stringify(users));
             }
 
             document.getElementById('username-modal').style.display = 'none';
@@ -335,14 +335,32 @@
             document.getElementById('username-modal').style.display = 'flex';
         }
 
-        function loadUserProjects() {
-            const storedData = localStorage.getItem(`zyrax_projects_${currentUsername}`);
-            projects = storedData ? JSON.parse(storedData) : [];
+        async function loadUserProjects() {
+            try {
+                const res = await fetch(`${API_URL}/bots?user=${currentUsername}`);
+                const data = await res.json();
+                if (data.success && data.bots.length > 0) {
+                    projects = data.bots.map((bot, index) => ({
+                        id: index + 1,
+                        name: bot.name,
+                        token: "Protected Token",
+                        fileName: "Bot Archive (.zip)",
+                        status: bot.status
+                    }));
+                } else {
+                    const storedData = localStorage.getItem(`winds_projects_${currentUsername}`);
+                    projects = storedData ? JSON.parse(storedData) : [];
+                }
+            } catch (err) {
+                const storedData = localStorage.getItem(`winds_projects_${currentUsername}`);
+                projects = storedData ? JSON.parse(storedData) : [];
+            }
             renderProjects(projects);
+            saveUserProjects();
         }
 
         function saveUserProjects() {
-            localStorage.setItem(`zyrax_projects_${currentUsername}`, JSON.stringify(projects));
+            localStorage.setItem(`winds_projects_${currentUsername}`, JSON.stringify(projects));
         }
 
         function openProjectModal() {
@@ -372,6 +390,7 @@
 
             showLoading("Uploading & Hosting Bot...", 3000, async () => {
                 const formData = new FormData();
+                formData.append('username', currentUsername);
                 formData.append('botName', name);
                 formData.append('token', token);
                 formData.append('botZip', file);
@@ -447,6 +466,7 @@
 
             showLoading("Updating & Restarting Bot...", 3000, async () => {
                 const formData = new FormData();
+                formData.append('username', currentUsername);
                 formData.append('botName', oldName);
                 if (newToken) formData.append('token', newToken);
                 if (file) formData.append('botZip', file);
@@ -509,7 +529,16 @@
             });
         }
 
-        function deleteProject(id) {
+        async function deleteProject(id) {
+            const proj = projects.find(p => p.id === id);
+            if (!proj) return;
+            try {
+                await fetch(`${API_URL}/delete/${encodeURIComponent(currentUsername)}/${encodeURIComponent(proj.name)}`, {
+                    method: 'DELETE'
+                });
+            } catch (err) {
+                console.warn("Backend deletion warning:", err.message);
+            }
             projects = projects.filter(p => p.id !== id);
             saveUserProjects();
             renderProjects(projects);
@@ -532,3 +561,4 @@
     </script>
 </body>
 </html>
+
