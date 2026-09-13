@@ -24,6 +24,14 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 
+app.get('/ping', (req, res) => {
+    res.status(200).send('OK - Backend is alive!');
+});
+
+app.get('/health', (req, res) => {
+    res.status(200).json({ status: 'healthy', activeBots: Object.keys(runningProcesses).length });
+});
+
 // User-specific bots fetch karne ke liye (?user=username)
 app.get('/bots', (req, res) => {
     try {
@@ -276,4 +284,3 @@ app.get('/logs/:username/:name', (req, res) => {
 app.listen(PORT, () => {
     console.log(`Zyrax Unified Backend running on port ${PORT}`);
 });
-
